@@ -203,13 +203,13 @@ __global__ void DFSKernel(int pattern_vertex_number, int edge_count, int max_deg
     int *buffer = new int[h]; // 记录每次的中间结果
     /*need to modify use what kind of basic unit to process a subtree*/
     // each warp process a subtree (an probe item)
-    for (; wid < pattern_vertex_number; wid += stride)
+    for (int first_vertex = wid; first_vertex < pattern_vertex_number; first_vertex += stride) // wzb: change to dynamic load
     {
-        buffer[0] = wid;
+        buffer[0] = first_vertex;
         while (true)
         {
             // 当前层为空，需要做交集
-            if (ir_number[level] == 0)
+            if (ir_number[level] == 0) // wzb: ir number match buffer
             {
                 // 不是最后一层，将中间结果写回global memory。不过也可以先写回share memory，再写回global memory，分层次写
                 if (level != h - 1)
@@ -220,9 +220,9 @@ __global__ void DFSKernel(int pattern_vertex_number, int edge_count, int max_deg
                     // 是否可以用warp去优化一下这个排序
                     // 用一个提前给定的结构给出每次做交集的点的索引。
                     int intersection_order_start = intersection_offset[level];
-                    int intersection_order_end = intersection_offset[level + 1] - 1;
-                    int intersection_order_length = intersection_order_end - intersection_order_start + 1;
-                    int *intersection_order = new int[intersection_order_length];
+                    int intersection_order_end = intersection_offset[level + 1];
+                    int intersection_order_length = intersection_order_end - intersection_order_start;
+                    int *intersection_order = new int[intersection_order_length]; // wzb: refine it
                     for (int i = 0; i < intersection_order_length; i++)
                         intersection_order[i] = intersection_orders[intersection_order_start + i];
                     int *neighbour_numbers = new int[intersection_order_length];
@@ -261,7 +261,7 @@ __global__ void DFSKernel(int pattern_vertex_number, int edge_count, int max_deg
                     // 首先取第一个intersection_order的顶点的邻居，每个顶点平均分配这些邻居节点,用local_meemory保存
                     int cur_vertex = buffer[intersection_order[0]];
                     int neighbor_num = neighbour_numbers[0];
-                    int thread_cache_size = neighbor_num / 32;
+                    int thread_cache_size = neighbor_num / 32; // wzb: can not maintain in register, reuse buffer
                     int remainder = neighbor_num % 32;
                     // 判断是否需要向上取整
                     if (remainder > 0)
@@ -288,7 +288,7 @@ __global__ void DFSKernel(int pattern_vertex_number, int edge_count, int max_deg
                                 continue;
                             int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
                             int hash_tables_start = hash_tables_offset[buffer[intersection_order[i]]];
-                            int *cmp = &hash_tables[hash_tables_start + value + edge_count];
+                            int *cmp = &hash_tables[hash_tables_start + value + edge_count]; // wzb: remove edge count
                             while (*cmp != -1)
                             {
                                 if (*cmp == thread_cache[i])
@@ -333,7 +333,7 @@ __global__ void DFSKernel(int pattern_vertex_number, int edge_count, int max_deg
                     }
                 }
                 // 是最后一层，将结果写入global
-                else
+                else // remove it
                 {
                     // 这里是每一个线程去执行一个用hash tabel进行交集的运算
                     // 用buffer存储当前的一个中间结果
