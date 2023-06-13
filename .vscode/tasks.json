@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "mynvcc",
+            "type": "shell",
+            "command": "nvcc",
+            "args": ["-g","-G","-o","${fileDirname}/preprocess","${file}"]
+        }
+    ]
+}
