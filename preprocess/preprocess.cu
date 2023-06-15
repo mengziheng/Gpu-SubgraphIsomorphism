@@ -185,6 +185,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int *buffer = new int[h];    // 记录每次的中间结果
     ir_number[level] = 0;
     __shared__ int warpsum[32];
+    __shared__ int ptr[32];
     warpsum[in_block_wid] = 0;
     int FLAG = 0;
     // each warp process a subtree (an probe item)
@@ -198,19 +199,20 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             if (level == 1)
             {
                 cur_vertex = getNewVertex(wid, cur_vertex, stride, vertex_count);
-                if (cur_vertex == -1)
+                if (cur_vertex == 1)
                 {
                     break;
                 }
                 if (lid == 0)
-                    printf("CHANGE new vertex !! cur_vertex is %d level is %d \n", cur_vertex, level);
+                    printf("CHANGE new vertex ! cur_vertex is %d level is %d \n", cur_vertex, level);
                 __syncwarp();
                 // 选择了一个新的节点作为probe item，作为初始节点,需要初始化ir_number
                 for (int i = 0; i < h; i++)
                     ir_number[i] = 0;
                 buffer[level - 1] = cur_vertex;
             }
-            // 计算需要做交集的元素即其邻居节点数目
+
+            // 预处理，计算需要做交集的元素即其邻居节点数目
             int intersection_order_start = intersection_offset[level - 1];
             int intersection_order_end = intersection_offset[level];
             int intersection_order_length = intersection_order_end - intersection_order_start;
@@ -224,216 +226,146 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 neighbour_numbers[i] = csr_row_value[buffer[intersection_order[i]]];
             }
-            if (lid == 0)
-                printf("BEFORE INTERSECTION : level is %d intersection_order_length is %d\n", level, intersection_order_length);
-            __syncwarp();
-            // 只有一个元素，不需要输出，只需要写入中间结果。
-            if (intersection_order_length == 1)
+            if (intersection_order_length == 2 && lid == 0)
             {
-                if (level == h - 1)
-                {
-                    warpsum[in_block_wid] = warpsum[in_block_wid] + neighbour_numbers[0];
-                    level = level - 1;
-                    continue;
-                }
-                else
-                {
-                    for (int i = lid; i < neighbour_numbers[0]; i += 32)
-                    {
-                        ir[wid * max_degree + (level - 1) * 1024 * 216 / 32 * max_degree + i] = csr_column_index[csr_row_offset[buffer[intersection_order[0]]] + i];
-                    }
-                    __syncwarp();
-                    ir_number[level] = neighbour_numbers[0] - 1;
-                    if (neighbour_numbers[0] == 0)
-                    {
-                        if (level > 1)
-                            level--;
-                        else
-                            ir_number[level] = 0;
-                        if (lid == 0)
-                            printf("-------------------\n");
-                        continue;
-                    }
-                }
+                printf("neighbour_number[0] : %d neighbour_number[1] : %d\n", neighbour_numbers[0], neighbour_numbers[1]);
+                printf("buffer[0] : %d buffer[1] : %d\n", buffer[0], buffer[1]);
             }
-            // 不止一个元素，需要做交集
-            else
+            int min;
+            int min_index;
+            for (int i = 0; i < intersection_order_length; i++)
             {
-                // 用一个线程去完成冒泡排序，记录排序后的顶点顺序，即最终的intersection顺序，这需要修改，这不是并行的了
-                if (intersection_order_length == 2 && lid == 0)
+                min = neighbour_numbers[i];
+                min_index = i;
+                for (int j = i + 1; j < intersection_order_length; j++)
                 {
-                    printf("neighbour_number[0] : %d neighbour_number[1] : %d\n", neighbour_numbers[0], neighbour_numbers[1]);
-                    printf("buffer[0] : %d buffer[1] : %d\n", buffer[0], buffer[1]);
-                }
-                int min;
-                int min_index;
-                for (int i = 0; i < intersection_order_length; i++)
-                {
-                    min = neighbour_numbers[i];
-                    min_index = i;
-                    for (int j = i + 1; j < intersection_order_length; j++)
+                    if (neighbour_numbers[j] < min)
                     {
-                        if (neighbour_numbers[j] < min)
-                        {
-                            min = neighbour_numbers[j];
-                            min_index = j;
-                        }
+                        min = neighbour_numbers[j];
+                        min_index = j;
                     }
-                    int tmp = neighbour_numbers[i];
-                    neighbour_numbers[i] = neighbour_numbers[min_index];
-                    neighbour_numbers[min_index] = tmp;
-                    tmp = intersection_order[i];
-                    intersection_order[i] = intersection_order[min_index];
-                    intersection_order[min_index] = tmp;
                 }
-                // 开始按intersection_order做join操作
-                // 首先取第一个intersection_order的顶点的邻居，每个顶点平均分配这些邻居节点,用local_meemory保存
-                int cur_vertex = buffer[intersection_order[0]];
-                int neighbor_num = neighbour_numbers[0];
-                if (neighbor_num == 0)
+                int tmp = neighbour_numbers[i];
+                neighbour_numbers[i] = neighbour_numbers[min_index];
+                neighbour_numbers[min_index] = tmp;
+                tmp = intersection_order[i];
+                intersection_order[i] = intersection_order[min_index];
+                intersection_order[min_index] = tmp;
+            }
+            int cur_vertex = buffer[intersection_order[0]];
+            int neighbor_num = neighbour_numbers[0];
+
+            int thread_cache_size = neighbor_num / 32 + 1;
+            int *thread_cache = new int[thread_cache_size];
+            // 初始化cache
+            for (int i = 0; i < thread_cache_size; i++)
+                thread_cache[i] = -1;
+            int index_for_thread_cache = 0;
+            // 初始化cache
+            for (int i = lid; i < neighbor_num; i += 32)
+            {
+                thread_cache[index_for_thread_cache] = csr_column_index[csr_row_offset[cur_vertex] + i];
+                index_for_thread_cache++;
+            }
+            __syncwarp();
+            int cur_order_index;
+            ptr[in_block_wid] = 0;
+            for (int i = 0; i < thread_cache_size; i++)
+            {
+                // cur_order_index从1开始是因为0已经被存入cache。
+                for (cur_order_index = 1; cur_order_index < intersection_order_length; cur_order_index++)
                 {
-                    level--;
-                    if (lid == 0)
-                        printf("-------------------\n");
-                    continue;
-                }
-                int thread_cache_size = neighbor_num / 32 + 1;
-                int *thread_cache = new int[thread_cache_size];
-                // 初始化cache
-                for (int i = 0; i < thread_cache_size; i++)
-                    thread_cache[i] = -1;
-                int index_for_thread_cache = 0;
-                // 初始化cache
-                for (int i = lid; i < neighbor_num; i += 32)
-                {
-                    thread_cache[index_for_thread_cache] = csr_column_index[csr_row_offset[cur_vertex] + i];
-                    index_for_thread_cache++;
+                    int k = 0;
+                    if (thread_cache[i] == -1)
+                        continue;
+                    int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
+                    int hash_table_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
+                    int hash_table_end = hash_tables_offset[buffer[intersection_order[cur_order_index]] + 1];
+                    int hash_table_length = hash_table_end - hash_table_start;
+                    int *cmp = &hash_tables[hash_table_start + value + edge_count]; // wzb: remove edge count
+                    int index = 0;
+                    if (buffer[1] == 780)
+                        printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
+                    while (*cmp != -1)
+                    {
+
+                        if (*cmp == thread_cache[i])
+                        {
+                            printf("cmp is %d,cache is %d\n", *cmp, *cmp);
+                            break;
+                        }
+                        cmp = cmp + edge_count;
+                        if (buffer[1] == 780)
+                            printf("tid %d cmp : %d && cache is %d 2\n", tid, *cmp, thread_cache[i]);
+                        index++;
+                        if (index == bucket_size)
+                        {
+                            value++;
+                            if (value == hash_table_length)
+                                value = 0;
+                            cmp = &hash_tables[hash_table_start + value + edge_count];
+                        }
+
+                        if (*cmp == -1)
+                            thread_cache[i] = -1;
+                    }
                 }
                 __syncwarp();
-                // 对所有的邻居集合都要进行一次intersection，因此需要for循环
-                // 如果有三个顶点，那最终只需要intersection两次。而最后一次需要写回，因此是3-2。这解释了下面为什么-2
-                int cur_order_index;
-                for (cur_order_index = 1; cur_order_index < intersection_order_length - 1; cur_order_index++)
+                if (thread_cache[i] != -1)
                 {
-                    // 每个thread处理一个元素的搜索，但是元素可能不止32个，因此要for循环来全部处理
-                    for (int i = 0; i < thread_cache_size; i++)
-                    {
-                        int k = 0;
-                        if (thread_cache[i] == -1)
-                        {
-                            continue;
-                        }
-                        int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
-                        int hash_tables_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
-                        int *cmp = &hash_tables[hash_tables_start + value + edge_count]; // wzb: remove edge count
-                        printf("%d\n", *cmp);
-                        while (*cmp != -1)
-                        {
-                            if (*cmp == thread_cache[i])
-                            {
-                                break;
-                            }
-                            if (*cmp == -1)
-                                thread_cache[i] = -1;
-                        }
-                    }
-                }
-                // 对最后一个顶点进行交集操作之后，就可以直接写回了。
-                // 每个thread处理一个元素的搜索，但是元素可能不止32个，因此要for循环来全部处理
-                // 这边可以再优化一下，每次存储的值都写到数组的前几位，这样可以减少循环。
-                if (cur_order_index != intersection_order_length)
-                {
-                    int ptr = 0;
-                    for (int i = 0; i < thread_cache_size; i++)
-                    {
-                        if (thread_cache[i] == -1)
-                        {
-                            continue;
-                        }
-
-                        int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
-                        printf("tid is %d thread_cache[0] is %d\n", tid, thread_cache[0]);
-                        int hash_table_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
-                        int hash_table_end = hash_tables_offset[buffer[intersection_order[cur_order_index]] + 1];
-                        int hash_table_length = hash_table_end - hash_table_start;
-                        int *cmp = &hash_tables[hash_table_start + value + edge_count];
-                        int index = 0;
-                        while (*cmp != -1)
-                        {
-                            printf("cmp = %d,cache = %d\n", *cmp, thread_cache[i]);
-                            if (*cmp == thread_cache[i])
-                            {
-                                if (level == h - 1)
-                                {
-                                    coalesced_group active = coalesced_threads();
-                                    // 最后一层，直接输出好了，不过目前实现的还是计数
-                                    printf("cmp is %d cache is %d active.size is %d\n", *cmp, thread_cache[i], active.size());
-                                    if (active.thread_rank() == 0)
-                                        warpsum[in_block_wid] = warpsum[in_block_wid] + active.size();
-                                }
-
-                                else
-                                {
-                                    coalesced_group active = coalesced_threads();
-                                    ir[active.thread_rank() + ptr + wid * max_degree + level * 1024 * 216 / 32 * max_degree] = thread_cache[index_for_thread_cache];
-                                    if (thread_cache[index_for_thread_cache] == 0)
-                                        printf("im here!!!!!!!!\n");
-                                    ptr = ptr + active.size();
-                                }
-                                break;
-                            }
-                            cmp = cmp + edge_count;
-                            index++;
-                            if (index == bucket_size)
-                            {
-                                value++;
-                                if (value == hash_table_length)
-                                    value = 0;
-                                cmp = &hash_tables[hash_table_start + value + edge_count];
-                            }
-
-                            if (*cmp == -1)
-                                thread_cache[i] = -1;
-                        }
-                    }
+                    coalesced_group active = coalesced_threads();
+                    // 如果是最后一层，则写入中间结果
                     if (level == h - 1)
                     {
-                        if (lid == 0)
-                            printf("triangle number for buffer{%d %d} is %d\n", buffer[0], buffer[1], warpsum[wid]);
-                        level--;
-                        if (lid == 0)
-                            printf("-------------------\n");
-                        __syncwarp();
-                        delete (thread_cache);
-                        continue;
+                        printf("level is %d cache is %d active.size is %d\n", level, thread_cache[i], active.size());
+                        if (active.thread_rank() == 0)
+                            warpsum[in_block_wid] = warpsum[in_block_wid] + active.size();
                     }
+                    // 如果不是，则写回
                     else
                     {
-                        ir_number[level] = ptr - 1;
-                        if (ptr == 0)
-                        {
-                            if (level > 1)
-                                level = level - 1;
-                            else
-                                ir_number[level] = ptr;
-                        }
-                        if (lid == 0)
-                            printf("-------------------\n");
-                        __syncwarp();
-                        delete (thread_cache);
-                        continue;
+                        ir[active.thread_rank() + ptr[in_block_wid] + wid * max_degree + 216 * 1024 / 32 * max_degree * level] = thread_cache[i];
+                        // ir[active.thread_rank() + ptr[in_block_wid] + wid * max_degree + level * 1024 * 216 / 32 * max_degree] = thread_cache[i];
+                        ptr[in_block_wid] = ptr[in_block_wid] + active.size();
                     }
                 }
-                delete (thread_cache);
+                __syncwarp();
             }
+            if (level == h - 1)
+            {
+                if (lid == 0)
+                    printf("buffer[0] is %d buffer[1] is %d number is %d\n", buffer[0], buffer[1], warpsum[in_block_wid]);
+                level--;
+                delete (thread_cache);
+                continue;
+            }
+            else
+            {
+                ir_number[level] = ptr[in_block_wid] - 1;
+                if (lid == 0)
+                    printf("not last vertex , neighbor is %d\n", ptr[in_block_wid]);
+                if (ptr[in_block_wid] == 0)
+                {
+                    if (level > 1)
+                        level--;
+                    else
+                        ir_number[level] = 0;
+                    delete (thread_cache);
+                    continue;
+                }
+            }
+            delete (thread_cache);
         }
         // 当前层不为空，取下一个元素
         else
         {
             ir_number[level] = ir_number[level] - 1;
         }
+        __syncwarp();
         // 更新临时结果
-        buffer[level] = ir[(level - 1) * 1024 * 216 / 32 * max_degree + wid * max_degree + ir_number[level]];
+        int tmp2 = ir_number[level];
+        int tmp1 = ir[(level)*1024 * 216 / 32 * max_degree + wid * max_degree + tmp2];
+        buffer[level] = tmp1;
         if (lid == 0)
         {
             if (level == 1)
@@ -469,6 +401,7 @@ int main(int argc, char *argv[])
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/test2.mmio";
     // string infilename = "../dataset/graph/test3.mmio";
+    // string infilename = "../dataset/graph/clique_6.mmio";
     loadgraph(infilename);
     bucket_num = edgeCount * load_factor_inverse / bucket_size;
     cout << "graph vertex number is : " << uCount << endl;
@@ -541,8 +474,9 @@ int main(int argc, char *argv[])
 
     // DFS
     int *d_ir; // intermediate result;
-    HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    // mzh : 这里有问题
+    HRR(cudaMalloc(&d_ir, 2160 * 1024 / 32 * max_degree * pattern_vertex_number));
+    HRR(cudaMemset(d_ir, -1, 2160 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
     cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
