@@ -26,8 +26,8 @@ int load_factor_inverse = 1 / load_factor;
 int bucket_size = 4;
 int parameter = load_factor_inverse / bucket_size;
 int local_register_num = 2;
-int max_degree;            // 记录最大度数
-int pattern_vertex_number; // pattern的节点数量
+int max_degree;                // 记录最大度数
+int pattern_vertex_number = 3; // pattern的节点数量
 
 static void HandError(cudaError_t err, const char *file, int line)
 {
@@ -93,11 +93,12 @@ __global__ void translateIntoCSRKernel(int *edgelist, int edgeCount, int vertexC
     // }
 }
 
-__global__ void buildHashTableOffset(int *hash_tables_offset, int *csr_row_offset, int vertex_count, int parameter)
+__global__ void buildHashTableOffset(int *hash_tables_offset, int *csr_row_offset, int *csr_row_value, int vertex_count, int parameter)
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
-    for (int i = tid; i < vertex_count; i += stride)
+    csr_row_offset[vertex_count] = csr_row_offset[vertex_count - 1] + csr_row_value[vertex_count - 1];
+    for (int i = tid; i < vertex_count + 1; i += stride)
         hash_tables_offset[i] = csr_row_offset[i] * parameter;
     // if (tid == 0)
     //     printf("%d\n", parameter);
@@ -125,7 +126,8 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
         value = key % hash_table_length;
         // 按列存储
         // len这一行可以存到shared memory中加快速度
-        int bucket_len = hash_tables[hash_table_start + value];
+        hash_tables[hash_table_start + value] = 0;
+        int bucket_len = 0;
         // 找到当前hash_tables中不满的bucket
         // if (i == 10000)
         //     printf("start %d end %d len %d key %d vertex %d\n", hash_table_start, hash_table_end, hash_table_length, key, vertex);
@@ -142,68 +144,123 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
     }
 }
 
-// h : height of subtree; h = pattern vertex number
-__global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int h, int parameter, int *intersection_orders, int *intersection_offset, int *csr_row_offset, int *csr_row_value, int *csr_column_index, int *hash_tables_offset, int *hash_tables, int *ir, int *sum)
+__device__ int getNewVertex(int wid, int cur_vertex, int stride, int vertex_count)
 {
+    if (cur_vertex == -1)
+        if (wid < vertex_count)
+            return wid;
+        else
+            return -1;
+    if (cur_vertex + stride < vertex_count)
+        return cur_vertex + stride;
+    else
+        return -1;
+}
 
+// h : height of subtree; h = pattern vertex number
+__global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int h, int bucket_size, int parameter, int *intersection_orders, int *intersection_offset, int *csr_row_offset, int *csr_row_value, int *csr_column_index, int *hash_tables_offset, int *hash_tables, int *ir, int *sum)
+{
     int tid = blockIdx.x * blockDim.x + threadIdx.x; // threadid
     int wid = tid / 32;                              // warpid
     int lid = tid % 32;                              // landid
     int level = 1;                                   // level of subtree,start from 0,not root for tree,but root for subtree
     int warp_sum = 0;                                // 记录一下每个warp记录得到的数量
-    int stride = blockDim.x * gridDim.x % 32;
+    int cur_vertex = -1;
+    int stride = blockDim.x * gridDim.x / 32;
     int *ir_number = new int[h]; // 记录一下每一层保存的数据大小
-
-    // 初始化
-    for (int i = 0; i < h; i++)
-        ir_number[i] = 0;
-    int *buffer = new int[h]; // 记录每次的中间结果
-
-    if (tid == 0)
-        printf("%d %d %d\n", intersection_offset[0], intersection_offset[1], intersection_offset[2]);
-    if (tid == 0)
-        printf("%d\n", vertex_count);
-    if (tid == 0)
-        printf("value : %d %d %d\n", csr_row_value[0], csr_row_value[1], csr_row_value[2]);
-
+    int *buffer = new int[h];    // 记录每次的中间结果
+    ir_number[level] = 0;
+    __shared__ int warpsum[32];
+    warpsum[wid] = 0;
+    int FLAG = 0;
     // each warp process a subtree (an probe item)
-    for (int first_vertex = wid; first_vertex < vertex_count; first_vertex += stride) // wzb: change to dynamic load
+
+    // while (FLAG != 50)
+    while (true)
     {
-        buffer[0] = first_vertex;
-        while (true)
+        // 当前层为空
+        if (ir_number[level] == 0)
         {
-            // 不是最后一层，将中间结果写回global memory。不过也可以先写回share memory，再写回global memory，分层次写
-            if (ir_number[level] == 0)
+            if (level == 1)
             {
-                // 这里是每一个线程去执行一个用hash tabel进行交集的运算
-                // 用buffer存储当前的一个中间结果
-                // 首先对buffer[]按照neighbour排序，按照neighbour从小到大顺序进行交集。
-                // 是否可以用warp去优化一下这个排序
-                // 用一个提前给定的结构给出每次做交集的点的索引。
-                int intersection_order_start = intersection_offset[level - 1];
-                int intersection_order_end = intersection_offset[level];
-                int intersection_order_length = intersection_order_end - intersection_order_start;
-                int *intersection_order = new int[intersection_order_length]; // wzb: refine it
-                for (int i = 0; i < intersection_order_length; i++)
-                    intersection_order[i] = intersection_orders[intersection_order_start + i];
-                int *neighbour_numbers = new int[intersection_order_length];
-                printf("level : %d intersection_order_length :%d\n", level, intersection_order_length);
-                // 将需要做交集的点的邻居数量都读入到寄存器中
-                for (int i = 0; i < intersection_order_length; i++)
+                cur_vertex = getNewVertex(wid, cur_vertex, stride, vertex_count);
+                if (cur_vertex == -1)
                 {
-                    neighbour_numbers[i] = csr_row_value[buffer[intersection_order[i]]];
-                    printf("neighbour_number for %d  is %d\n", buffer[intersection_order[i]], neighbour_numbers[i]);
+                    printf("%d %d %d %d\n", wid, cur_vertex, stride, vertex_count);
+                    break;
                 }
+                if (lid == 0)
+                    printf("CHANGE new vertex !! cur_vertex is %d level is %d \n", cur_vertex, level);
+                __syncthreads();
+                // 选择了一个新的节点作为probe item，作为初始节点,需要初始化ir_number
+                for (int i = 0; i < h; i++)
+                    ir_number[i] = 0;
+                buffer[level - 1] = cur_vertex;
+            }
+            if (buffer[1] == 859)
+                printf("Hey im here,level = %d\n", level);
+            // 计算需要做交集的元素即其邻居节点数目
+            int intersection_order_start = intersection_offset[level - 1];
+            int intersection_order_end = intersection_offset[level];
+            int intersection_order_length = intersection_order_end - intersection_order_start;
+            int *intersection_order = new int[intersection_order_length]; // wzb: refine it
+            if (buffer[1] == 859)
+                printf("Hey im here + 1 , length = %d start = %d\n", intersection_order_length, intersection_order_start);
+            for (int i = 0; i < intersection_order_length; i++)
+            {
+                if (intersection_order_start + i >= 0 && intersection_order_start + i <= 2)
+                    intersection_order[i] = intersection_orders[intersection_order_start + i];
+                else
+                {
+                    printf("index 1 = %d index2 = %d\n", i, intersection_order_start + i);
+                    break;
+                }
+            }
 
-                // if (tid == 1)
-                // {
-                //     printf("level %d intersection_order_length %d\n", level, intersection_order_length);
-                //     printf("level : %d buffer[0] %d buffer[intersection_order[i]] %d  %d\n", level, buffer[0], buffer[intersection_order[0]], neighbour_numbers[0]);
-                //     printf("%d %d %d", csr_row_offset[0], csr_row_offset[1], csr_row_offset[2]);
-                // }
-
-                // 用一个线程去完成冒泡排序，记录排序后的顶点顺序，即最终的intersection顺序
-                // 这需要修改，这不是并行的了
+            int *neighbour_numbers = new int[intersection_order_length];
+            for (int i = 0; i < intersection_order_length; i++)
+            {
+                neighbour_numbers[i] = csr_row_value[buffer[intersection_order[i]]];
+            }
+            if (lid == 0)
+                printf("BEFORE INTERSECTION : level is %d intersection_order_length is %d buffer is %d neighbour_number is %d\n", level, intersection_order_length, buffer[intersection_order[0]], neighbour_numbers[0]);
+            __syncthreads();
+            // 只有一个元素，不需要输出，只需要写入中间结果。
+            if (intersection_order_length == 1)
+            {
+                if (level == h - 1)
+                {
+                    warpsum[wid] = warpsum[wid] + neighbour_numbers[0];
+                    level = level - 1;
+                    continue;
+                }
+                else
+                {
+                    for (int i = lid; i < neighbour_numbers[0]; i += 32)
+                    {
+                        ir[wid * max_degree + (level - 1) * 1024 * 216 / 32 * max_degree + i] = csr_column_index[csr_row_offset[buffer[intersection_order[0]]] + i];
+                    }
+                    __syncthreads();
+                    ir_number[level] = neighbour_numbers[0] - 1;
+                    if (neighbour_numbers[0] == 0)
+                    {
+                        if (level > 1)
+                            level--;
+                        else
+                            ir_number[level] = 0;
+                        continue;
+                    }
+                }
+            }
+            // 不止一个元素，需要做交集
+            else
+            {
+                // 用一个线程去完成冒泡排序，记录排序后的顶点顺序，即最终的intersection顺序，这需要修改，这不是并行的了
+                if (intersection_order_length == 2 && lid == 0)
+                {
+                    printf("neighbour_number[0] : %d neighbour_number[1] : %d\n", neighbour_numbers[0], neighbour_numbers[1]);
+                    printf("buffer[0] : %d buffer[1] : %d\n", buffer[0], buffer[1]);
+                }
                 int min;
                 int min_index;
                 for (int i = 0; i < intersection_order_length; i++)
@@ -218,20 +275,22 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                             min_index = j;
                         }
                     }
-
                     int tmp = neighbour_numbers[i];
                     neighbour_numbers[i] = neighbour_numbers[min_index];
                     neighbour_numbers[min_index] = tmp;
-
                     tmp = intersection_order[i];
                     intersection_order[i] = intersection_order[min_index];
                     intersection_order[min_index] = tmp;
                 }
-
                 // 开始按intersection_order做join操作
                 // 首先取第一个intersection_order的顶点的邻居，每个顶点平均分配这些邻居节点,用local_meemory保存
                 int cur_vertex = buffer[intersection_order[0]];
                 int neighbor_num = neighbour_numbers[0];
+                if (neighbor_num == 0)
+                {
+                    level--;
+                    continue;
+                }
                 int thread_cache_size = neighbor_num / 32; // wzb: can not maintain in register, reuse buffer
                 int remainder = neighbor_num % 32;
                 // 判断是否需要向上取整
@@ -240,6 +299,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     thread_cache_size += 1;
                 }
                 int *thread_cache = new int[thread_cache_size];
+                // 初始化cache
+                for (int i = 0; i < thread_cache_size; i++)
+                    thread_cache[i] = -1;
                 int index_for_thread_cache = 0;
                 // 初始化cache
                 for (int i = lid; i < neighbor_num; i += 32)
@@ -255,16 +317,19 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     // 每个thread处理一个元素的搜索，但是元素可能不止32个，因此要for循环来全部处理
                     for (int i = 0; i < thread_cache_size; i++)
                     {
+                        int k = 0;
                         if (thread_cache[i] == -1)
                             continue;
                         int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
-                        int hash_tables_start = hash_tables_offset[buffer[intersection_order[i]]];
+                        int hash_tables_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
                         int *cmp = &hash_tables[hash_tables_start + value + edge_count]; // wzb: remove edge count
+                        printf("%d\n", *cmp);
                         while (*cmp != -1)
                         {
                             if (*cmp == thread_cache[i])
+                            {
                                 break;
-                            cmp = cmp + edge_count;
+                            }
                             if (*cmp == -1)
                                 thread_cache[i] = -1;
                         }
@@ -281,68 +346,117 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                         if (thread_cache[i] == -1)
                             continue;
                         int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
-                        int hash_tables_start = hash_tables_offset[buffer[intersection_order[i]]];
-                        int *cmp = &hash_tables[hash_tables_start + value + edge_count];
+                        printf("tid is %d thread_cache[0] is %d\n", tid, thread_cache[0]);
+                        int hash_table_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
+                        int hash_table_end = hash_tables_offset[buffer[intersection_order[cur_order_index]] + 1];
+                        int hash_table_length = hash_table_end - hash_table_start;
+                        int *cmp = &hash_tables[hash_table_start + value + edge_count];
+                        int index = 0;
                         while (*cmp != -1)
                         {
+                            printf("cmp = %d,cache = %d\n", *cmp, thread_cache[i]);
                             if (*cmp == thread_cache[i])
                             {
-                                if (level != h - 1)
+                                if (level == h - 1)
+                                {
+                                    coalesced_group active = coalesced_threads();
+                                    // 最后一层，直接输出好了，不过目前实现的还是计数
+                                    printf("cmp is %d cache is %d active.size is %d\n", *cmp, thread_cache[i], active.size());
+                                    if (active.thread_rank() == 0)
+                                        warpsum[wid] = warpsum[wid] + active.size();
+                                }
+
+                                else
                                 {
                                     coalesced_group active = coalesced_threads();
                                     ir[active.thread_rank() + ptr + wid * max_degree + level * 1024 * 216 / 32 * max_degree] = thread_cache[index_for_thread_cache];
+                                    if (thread_cache[index_for_thread_cache] == 0)
+                                        printf("im here!!!!!!!!\n");
                                     ptr = ptr + active.size();
                                 }
-                                else
-                                {
-                                    // 最后一层，直接输出好了，不过目前实现的还是计数
-                                    coalesced_group active = coalesced_threads();
-                                    warp_sum = warp_sum + active.size();
-                                }
+                                break;
                             }
                             cmp = cmp + edge_count;
+                            index++;
+                            if (index == bucket_size)
+                            {
+                                value++;
+                                if (value == hash_table_length)
+                                    value = 0;
+                                cmp = &hash_tables[hash_table_start + value + edge_count];
+                            }
+
                             if (*cmp == -1)
                                 thread_cache[i] = -1;
                         }
                     }
-                    ir_number[level] = ptr;
-                    if (ptr == 0)
-                        if (level > 0)
-                            level = level - 1;
-                        else
-                            break;
-                    continue;
+                    if (level == h - 1)
+                    {
+                        if (lid == 0)
+                            printf("triangle number for buffer{%d %d} is %d\n", buffer[0], buffer[1], warpsum[wid]);
+                        level--;
+                        if (lid == 0)
+                            printf("-------------------\n");
+                        __syncthreads();
+                        continue;
+                    }
+                    else
+                    {
+                        ir_number[level] = ptr - 1;
+                        if (ptr == 0)
+                        {
+                            if (level > 1)
+                                level = level - 1;
+                            else
+                                ir_number[level] = ptr;
+                        }
+                        if (lid == 0)
+                            printf("-------------------\n");
+                        __syncthreads();
+                        continue;
+                    }
                 }
-                free(intersection_order);
-                free(neighbour_numbers);
                 free(thread_cache);
             }
-            // 是最后一层，将结果写入global
-            // 当前层不为空，取下一个元素
-            else
-            {
-                if (lid == 0)
-                    ir_number[level] = ir_number[level] - 1;
-            }
-            // 更新临时结果
-            buffer[level] = ir[level * 1024 * 216 / 32 * max_degree + wid * max_degree + ir_number[level]];
-            level++;
+            free(intersection_order);
+            free(neighbour_numbers);
         }
-        if (lid == 1)
+        // 当前层不为空，取下一个元素
+        else
         {
-            atomicAdd(sum, warp_sum);
+            ir_number[level] = ir_number[level] - 1;
         }
+        // 更新临时结果
+        buffer[level] = ir[(level - 1) * 1024 * 216 / 32 * max_degree + wid * max_degree + ir_number[level]];
+        if (lid == 0)
+        {
+            if (level == 1)
+                printf("Current buffer is {%d,%d}\n", buffer[0], buffer[1]);
+            if (level == 2)
+                printf("Current buffer is {%d,%d,%d}\n", buffer[0], buffer[1], buffer[2]);
+        }
+        level++;
+        ir_number[level] = 0;
+        if (lid == 0)
+            printf("-------------------\n");
+        FLAG++;
     }
     free(ir_number);
     free(buffer);
+    // if (wid == 0)
+    // {
+    //     // atomicAdd(sum, warp_sum);
+    //     printf("final sum is %d tid : %d\n", warp_sum, tid);
+    // }
 }
 
 int main(int argc, char *argv[])
 {
     // load graph file
-    // string infilename = "../dataset/graph/as20000102_adj.mmio";
+    string infilename = "../dataset/graph/as20000102_adj.mmio";
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
-    string infilename = "../dataset/graph/test.mmio";
+    // string infilename = "../dataset/graph/test2.mmio";
+    // string infilename = "../dataset/graph/test3.mmio";
     loadgraph(infilename);
     cout << "graph vertex number is : " << uCount << endl;
     cout << "graph edge number is : " << edgeCount << endl;
@@ -360,7 +474,7 @@ int main(int argc, char *argv[])
     int *d_csr_row_offset;
     HRR(cudaMalloc(&d_csr_column_index, edgeCount * sizeof(int)));
     HRR(cudaMalloc(&d_csr_row_value, uCount * sizeof(int)));
-    HRR(cudaMalloc(&d_csr_row_offset, uCount * sizeof(int)));
+    HRR(cudaMalloc(&d_csr_row_offset, (uCount + 1) * sizeof(int)));
     printf("-------------translate into CSR and saved in Device---------------------\n");
     // 查看下可用share memory的最大值
     cudaDeviceProp deviceProp;
@@ -381,9 +495,8 @@ int main(int argc, char *argv[])
     cudaMalloc(&d_temp_storage, temp_storage_bytes);
     // Run max-reduction
     cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_csr_row_value, d_max_degree, uCount);
-    int *h_max = (int *)malloc(sizeof(int));
-    HRR(cudaMemcpy(h_max, d_max_degree, sizeof(int), cudaMemcpyDeviceToHost));
-    std::cout << "Maximum number found on gpu was: " << *h_max << std::endl;
+    HRR(cudaMemcpy(&max_degree, d_max_degree, sizeof(int), cudaMemcpyDeviceToHost));
+    std::cout << "max degree is: " << max_degree << std::endl;
 
     // get row_offset for CSR
     d_temp_storage = NULL;
@@ -395,18 +508,21 @@ int main(int argc, char *argv[])
     // build hash table in device
     int *d_hash_tables;
     HRR(cudaMalloc(&d_hash_tables, bucket_size * edgeCount * sizeof(int)));
+    HRR(cudaMemset(d_hash_tables, -1, bucket_size * edgeCount * sizeof(int)));
     int *d_hash_tables_offset;
-    HRR(cudaMalloc(&d_hash_tables_offset, uCount * sizeof(int)));
+    HRR(cudaMalloc(&d_hash_tables_offset, (uCount + 1) * sizeof(int)));
     int *d_hash_table_parameters;
     HRR(cudaMalloc(&d_hash_table_parameters, uCount * sizeof(int)));
+    printf("uCount : %d\n", uCount);
     // 写hash_table_offset
-    buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, uCount, parameter);
+    buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
     buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
     // DFS
     int *d_ir; // intermediate result;
     HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(&d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    HRR(cudaMemset(d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
     // 先提前假定一下三角形的顺序
@@ -418,21 +534,22 @@ int main(int argc, char *argv[])
     int *d_intersection_offset;
     cudaMalloc(&d_intersection_offset, 3 * 4);
     HRR(cudaMemcpy(d_intersection_offset, intersection_offset, 12, cudaMemcpyHostToDevice));
-    int h = 2;
+    int h = 3;
     int *d_sum;
     cudaMalloc(&d_sum, 4);
     cudaMemset(d_sum, 0, 4);
     int csr_row_value[uCount];
-    cudaMemcpy(csr_row_value, d_csr_row_value, uCount * sizeof(int), cudaMemcpyDeviceToHost);
-    for (int i = 0; i < 3; i++)
-    {
-        printf("%d ", csr_row_value[i]);
-    }
-    printf("\n");
-    DFSKernel<<<216, 512>>>(uCount, edgeCount, max_degree, h, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
-    int sum;
-    cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
-    printf("triangle count is %d\n", sum);
+    HRR(cudaMemcpy(csr_row_value, d_csr_row_value, uCount * sizeof(int), cudaMemcpyDeviceToHost));
+    // printf("csr_value is : ");
+    // for (int i = 0; i < uCount; i++)
+    // {
+    //     printf("%d ", csr_row_value[i]);
+    // }
+    // printf("\n");
+    DFSKernel<<<1, 32>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
+    // int sum;
+    // cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
+    // printf("triangle count is %d\n", sum);
     cudaDeviceSynchronize();
     // verify
     // int csr_column_index[edgeCount];

@@ -5,7 +5,7 @@
             "label": "mynvcc",
             "type": "shell",
             "command": "nvcc",
-            "args": ["-g","-G","-o","${fileDirname}/preprocess","${file}"]
+            "args": ["-G","-g","-o","${fileDirname}/preprocess","${file}"]
         }
     ]
 }

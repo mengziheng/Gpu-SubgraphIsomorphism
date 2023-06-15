@@ -11,10 +11,10 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    int neighbour_numbers[4] = {50, 10, 40, 100};
-    int intersection_order[4] = {0, 1, 3, 4};
+    int neighbour_numbers[1] = {10};
+    int intersection_order[1] = {9};
 
-    int intersection_order_length = 4;
+    int intersection_order_length = 1;
     int min;
     int min_index;
     for (int i = 0; i < intersection_order_length; i++)
