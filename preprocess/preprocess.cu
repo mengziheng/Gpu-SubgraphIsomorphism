@@ -164,9 +164,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int tid = blockIdx.x * blockDim.x + threadIdx.x; // threadid
     int wid = tid / 32;                              // warpid
     int in_block_wid = threadIdx.x / 32;
-    int lid = tid % 32;                              // landid
-    int level = 1;                                   // level of subtree,start from 0,not root for tree,but root for subtree
-    int warp_sum = 0;                                // 记录一下每个warp记录得到的数量
+    int lid = tid % 32; // landid
+    int level = 1;      // level of subtree,start from 0,not root for tree,but root for subtree
+    int warp_sum = 0;   // 记录一下每个warp记录得到的数量
     int cur_vertex = -1;
     int stride = blockDim.x * gridDim.x / 32;
     int *ir_number = new int[h]; // 记录一下每一层保存的数据大小
@@ -430,6 +430,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 printf("Current buffer is {%d,%d,%d}\n", buffer[0], buffer[1], buffer[2]);
         }
         level++;
+        __syncwarp();
         ir_number[level] = 0;
         if (lid == 0)
             printf("-------------------\n");
@@ -518,7 +519,6 @@ int main(int argc, char *argv[])
     buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
     buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
-
     int hash_tables[load_factor_inverse * edgeCount];
     cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
     for (int i = 0; i < 20; i++)
@@ -526,7 +526,7 @@ int main(int argc, char *argv[])
         printf("%d ", hash_tables[i]);
     }
     printf("\n");
-    
+
     // DFS
     int *d_ir; // intermediate result;
     HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
