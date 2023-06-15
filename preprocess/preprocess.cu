@@ -186,7 +186,6 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 cur_vertex = getNewVertex(wid, cur_vertex, stride, vertex_count);
                 if (cur_vertex == -1)
                 {
-                    printf("%d %d %d %d\n", wid, cur_vertex, stride, vertex_count);
                     break;
                 }
                 if (lid == 0)
@@ -203,7 +202,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             int intersection_order_start = intersection_offset[level - 1];
             int intersection_order_end = intersection_offset[level];
             int intersection_order_length = intersection_order_end - intersection_order_start;
-            int *intersection_order = new int[intersection_order_length]; // wzb: refine it
+            int intersection_order[2]; // wzb: refine it
             if (buffer[1] == 859)
                 printf("Hey im here + 1 , length = %d start = %d\n", intersection_order_length, intersection_order_start);
             for (int i = 0; i < intersection_order_length; i++)
@@ -217,13 +216,13 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 }
             }
 
-            int *neighbour_numbers = new int[intersection_order_length];
+            int neighbour_numbers[2];
             for (int i = 0; i < intersection_order_length; i++)
             {
                 neighbour_numbers[i] = csr_row_value[buffer[intersection_order[i]]];
             }
             if (lid == 0)
-                printf("BEFORE INTERSECTION : level is %d intersection_order_length is %d buffer is %d neighbour_number is %d\n", level, intersection_order_length, buffer[intersection_order[0]], neighbour_numbers[0]);
+                printf("BEFORE INTERSECTION : level is %d intersection_order_length is %d\n", level, intersection_order_length);
             __syncthreads();
             // 只有一个元素，不需要输出，只需要写入中间结果。
             if (intersection_order_length == 1)
@@ -319,7 +318,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     {
                         int k = 0;
                         if (thread_cache[i] == -1)
+                        {
                             continue;
+                        }
                         int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
                         int hash_tables_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
                         int *cmp = &hash_tables[hash_tables_start + value + edge_count]; // wzb: remove edge count
@@ -344,7 +345,10 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     for (int i = 0; i < thread_cache_size; i++)
                     {
                         if (thread_cache[i] == -1)
+                        {
                             continue;
+                        }
+
                         int value = thread_cache[i] % (neighbour_numbers[cur_order_index] * parameter);
                         printf("tid is %d thread_cache[0] is %d\n", tid, thread_cache[0]);
                         int hash_table_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
@@ -398,6 +402,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                         if (lid == 0)
                             printf("-------------------\n");
                         __syncthreads();
+                        delete (thread_cache);
                         continue;
                     }
                     else
@@ -413,13 +418,12 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                         if (lid == 0)
                             printf("-------------------\n");
                         __syncthreads();
+                        delete (thread_cache);
                         continue;
                     }
                 }
-                free(thread_cache);
+                delete (thread_cache);
             }
-            free(intersection_order);
-            free(neighbour_numbers);
         }
         // 当前层不为空，取下一个元素
         else
@@ -441,13 +445,18 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             printf("-------------------\n");
         FLAG++;
     }
-    free(ir_number);
-    free(buffer);
+    delete (ir_number);
+    delete (buffer);
     // if (wid == 0)
     // {
     //     // atomicAdd(sum, warp_sum);
     //     printf("final sum is %d tid : %d\n", warp_sum, tid);
     // }
+    if (tid == 0){
+        printf("sum is %d\n",warpsum[0]);
+        sum[0] = warpsum[0];
+    }
+        
 }
 
 int main(int argc, char *argv[])
@@ -526,14 +535,15 @@ int main(int argc, char *argv[])
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
     // 先提前假定一下三角形的顺序
-    int intersection_orders[3] = {0, 0, 1};
-    int intersection_offset[3] = {0, 1, 3};
+    int intersection_orders[4] = {0, 0, 1};
+    int intersection_offset[4] = {0, 1, 3};
     int *d_intersection_orders;
-    cudaMalloc(&d_intersection_orders, 3 * 4);
-    HRR(cudaMemcpy(d_intersection_orders, intersection_orders, 12, cudaMemcpyHostToDevice));
+    int intersection_size = 4;
+    cudaMalloc(&d_intersection_orders, intersection_size * sizeof(int));
+    HRR(cudaMemcpy(d_intersection_orders, intersection_orders, 16, cudaMemcpyHostToDevice));
     int *d_intersection_offset;
-    cudaMalloc(&d_intersection_offset, 3 * 4);
-    HRR(cudaMemcpy(d_intersection_offset, intersection_offset, 12, cudaMemcpyHostToDevice));
+    cudaMalloc(&d_intersection_offset, intersection_size * sizeof(int));
+    HRR(cudaMemcpy(d_intersection_offset, intersection_offset, 16, cudaMemcpyHostToDevice));
     int h = 3;
     int *d_sum;
     cudaMalloc(&d_sum, 4);
@@ -547,9 +557,9 @@ int main(int argc, char *argv[])
     // }
     // printf("\n");
     DFSKernel<<<1, 32>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
-    // int sum;
-    // cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
-    // printf("triangle count is %d\n", sum);
+    int sum;
+    cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
+    printf("triangle count is %d\n", sum);
     cudaDeviceSynchronize();
     // verify
     // int csr_column_index[edgeCount];
