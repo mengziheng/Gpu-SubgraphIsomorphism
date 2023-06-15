@@ -145,6 +145,19 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
     }
 }
 
+// __device__ int getNewVertex(int wid, int cur_vertex, int stride, int vertex_count)
+// {
+//     if (cur_vertex == -1)
+//         if (wid < vertex_count)
+//             return wid;
+//         else
+//             return -1;
+//     if (cur_vertex + stride < vertex_count)
+//         return cur_vertex + stride;
+//     else
+//         return -1;
+// }
+
 __device__ int getNewVertex(int wid, int cur_vertex, int stride, int vertex_count)
 {
     if (cur_vertex == -1)
@@ -166,7 +179,6 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int in_block_wid = threadIdx.x / 32;
     int lid = tid % 32; // landid
     int level = 1;      // level of subtree,start from 0,not root for tree,but root for subtree
-    int warp_sum = 0;   // 记录一下每个warp记录得到的数量
     int cur_vertex = -1;
     int stride = blockDim.x * gridDim.x / 32;
     int *ir_number = new int[h]; // 记录一下每一层保存的数据大小
@@ -177,8 +189,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int FLAG = 0;
     // each warp process a subtree (an probe item)
 
-    // while (FLAG != 50)
-    while (true)
+    while (FLAG != 300)
+    // while (true)
     {
         // 当前层为空
         if (ir_number[level] == 0)
