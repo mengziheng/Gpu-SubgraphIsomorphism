@@ -24,6 +24,7 @@ int uCount = 0, vCount = 0, uMax = 0, vMax = 0, edgeCount;
 float load_factor = 0.25;
 int load_factor_inverse = 1 / load_factor;
 int bucket_size = 4;
+int bucket_num;
 int parameter = load_factor_inverse / bucket_size;
 int local_register_num = 2;
 int max_degree;                // 记录最大度数
@@ -162,6 +163,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x; // threadid
     int wid = tid / 32;                              // warpid
+    int in_block_wid = threadIdx.x / 32;
     int lid = tid % 32;                              // landid
     int level = 1;                                   // level of subtree,start from 0,not root for tree,but root for subtree
     int warp_sum = 0;                                // 记录一下每个warp记录得到的数量
@@ -171,7 +173,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int *buffer = new int[h];    // 记录每次的中间结果
     ir_number[level] = 0;
     __shared__ int warpsum[32];
-    warpsum[wid] = 0;
+    warpsum[in_block_wid] = 0;
     int FLAG = 0;
     // each warp process a subtree (an probe item)
 
@@ -190,32 +192,21 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 }
                 if (lid == 0)
                     printf("CHANGE new vertex !! cur_vertex is %d level is %d \n", cur_vertex, level);
-                __syncthreads();
+                __syncwarp();
                 // 选择了一个新的节点作为probe item，作为初始节点,需要初始化ir_number
                 for (int i = 0; i < h; i++)
                     ir_number[i] = 0;
                 buffer[level - 1] = cur_vertex;
             }
-            if (buffer[1] == 859)
-                printf("Hey im here,level = %d\n", level);
             // 计算需要做交集的元素即其邻居节点数目
             int intersection_order_start = intersection_offset[level - 1];
             int intersection_order_end = intersection_offset[level];
             int intersection_order_length = intersection_order_end - intersection_order_start;
             int intersection_order[2]; // wzb: refine it
-            if (buffer[1] == 859)
-                printf("Hey im here + 1 , length = %d start = %d\n", intersection_order_length, intersection_order_start);
             for (int i = 0; i < intersection_order_length; i++)
             {
-                if (intersection_order_start + i >= 0 && intersection_order_start + i <= 2)
-                    intersection_order[i] = intersection_orders[intersection_order_start + i];
-                else
-                {
-                    printf("index 1 = %d index2 = %d\n", i, intersection_order_start + i);
-                    break;
-                }
+                intersection_order[i] = intersection_orders[intersection_order_start + i];
             }
-
             int neighbour_numbers[2];
             for (int i = 0; i < intersection_order_length; i++)
             {
@@ -223,13 +214,13 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             }
             if (lid == 0)
                 printf("BEFORE INTERSECTION : level is %d intersection_order_length is %d\n", level, intersection_order_length);
-            __syncthreads();
+            __syncwarp();
             // 只有一个元素，不需要输出，只需要写入中间结果。
             if (intersection_order_length == 1)
             {
                 if (level == h - 1)
                 {
-                    warpsum[wid] = warpsum[wid] + neighbour_numbers[0];
+                    warpsum[in_block_wid] = warpsum[in_block_wid] + neighbour_numbers[0];
                     level = level - 1;
                     continue;
                 }
@@ -239,7 +230,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     {
                         ir[wid * max_degree + (level - 1) * 1024 * 216 / 32 * max_degree + i] = csr_column_index[csr_row_offset[buffer[intersection_order[0]]] + i];
                     }
-                    __syncthreads();
+                    __syncwarp();
                     ir_number[level] = neighbour_numbers[0] - 1;
                     if (neighbour_numbers[0] == 0)
                     {
@@ -247,6 +238,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                             level--;
                         else
                             ir_number[level] = 0;
+                        if (lid == 0)
+                            printf("-------------------\n");
                         continue;
                     }
                 }
@@ -288,15 +281,11 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 if (neighbor_num == 0)
                 {
                     level--;
+                    if (lid == 0)
+                        printf("-------------------\n");
                     continue;
                 }
-                int thread_cache_size = neighbor_num / 32; // wzb: can not maintain in register, reuse buffer
-                int remainder = neighbor_num % 32;
-                // 判断是否需要向上取整
-                if (remainder > 0)
-                {
-                    thread_cache_size += 1;
-                }
+                int thread_cache_size = neighbor_num / 32 + 1;
                 int *thread_cache = new int[thread_cache_size];
                 // 初始化cache
                 for (int i = 0; i < thread_cache_size; i++)
@@ -308,10 +297,11 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     thread_cache[index_for_thread_cache] = csr_column_index[csr_row_offset[cur_vertex] + i];
                     index_for_thread_cache++;
                 }
+                __syncwarp();
                 // 对所有的邻居集合都要进行一次intersection，因此需要for循环
                 // 如果有三个顶点，那最终只需要intersection两次。而最后一次需要写回，因此是3-2。这解释了下面为什么-2
                 int cur_order_index;
-                for (cur_order_index = 1; cur_order_index < intersection_order_length - 2; cur_order_index++)
+                for (cur_order_index = 1; cur_order_index < intersection_order_length - 1; cur_order_index++)
                 {
                     // 每个thread处理一个元素的搜索，但是元素可能不止32个，因此要for循环来全部处理
                     for (int i = 0; i < thread_cache_size; i++)
@@ -367,7 +357,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                                     // 最后一层，直接输出好了，不过目前实现的还是计数
                                     printf("cmp is %d cache is %d active.size is %d\n", *cmp, thread_cache[i], active.size());
                                     if (active.thread_rank() == 0)
-                                        warpsum[wid] = warpsum[wid] + active.size();
+                                        warpsum[in_block_wid] = warpsum[in_block_wid] + active.size();
                                 }
 
                                 else
@@ -401,7 +391,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                         level--;
                         if (lid == 0)
                             printf("-------------------\n");
-                        __syncthreads();
+                        __syncwarp();
                         delete (thread_cache);
                         continue;
                     }
@@ -417,7 +407,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                         }
                         if (lid == 0)
                             printf("-------------------\n");
-                        __syncthreads();
+                        __syncwarp();
                         delete (thread_cache);
                         continue;
                     }
@@ -452,11 +442,11 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     //     // atomicAdd(sum, warp_sum);
     //     printf("final sum is %d tid : %d\n", warp_sum, tid);
     // }
-    if (tid == 0){
-        printf("sum is %d\n",warpsum[0]);
+    if (tid == 0)
+    {
+        printf("sum is %d\n", warpsum[0]);
         sum[0] = warpsum[0];
     }
-        
 }
 
 int main(int argc, char *argv[])
@@ -467,6 +457,7 @@ int main(int argc, char *argv[])
     // string infilename = "../dataset/graph/test2.mmio";
     // string infilename = "../dataset/graph/test3.mmio";
     loadgraph(infilename);
+    bucket_num = edgeCount * load_factor_inverse / bucket_size;
     cout << "graph vertex number is : " << uCount << endl;
     cout << "graph edge number is : " << edgeCount << endl;
     cout << "graph load_factor_inverse is : " << load_factor_inverse << endl;
@@ -516,8 +507,8 @@ int main(int argc, char *argv[])
 
     // build hash table in device
     int *d_hash_tables;
-    HRR(cudaMalloc(&d_hash_tables, bucket_size * edgeCount * sizeof(int)));
-    HRR(cudaMemset(d_hash_tables, -1, bucket_size * edgeCount * sizeof(int)));
+    HRR(cudaMalloc(&d_hash_tables, load_factor_inverse * edgeCount * sizeof(int)));
+    HRR(cudaMemset(d_hash_tables, -1, load_factor_inverse * edgeCount * sizeof(int)));
     int *d_hash_tables_offset;
     HRR(cudaMalloc(&d_hash_tables_offset, (uCount + 1) * sizeof(int)));
     int *d_hash_table_parameters;
@@ -527,6 +518,15 @@ int main(int argc, char *argv[])
     buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
     buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
+
+    int hash_tables[load_factor_inverse * edgeCount];
+    cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
+    for (int i = 0; i < 20; i++)
+    {
+        printf("%d ", hash_tables[i]);
+    }
+    printf("\n");
+    
     // DFS
     int *d_ir; // intermediate result;
     HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
