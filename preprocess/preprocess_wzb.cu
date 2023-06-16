@@ -271,8 +271,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 
             // Start intersection, load neighbor of m1 into my_candidates
             int *my_candidates = my_candidates_for_all_mapping + level * max_degree;
-            int cur_vertex = intersection_order[0];
-            int *cur_neighbor_list = csr_column_index + csr_row_offset[mapping[cur_vertex]];
+            int cur_vertex = mapping[intersection_order[0]];
+            int *cur_neighbor_list = csr_column_index + csr_row_offset[cur_vertex];
             for (int i = lid; i < neighbour_numbers[0]; i += 32)
             {
                 my_candidates[i] = cur_neighbor_list[i];
@@ -284,9 +284,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 printf("candidate_number %d \n", candidate_number);
             for (int j = 1; j < intersection_order_length; j++)
             {
-                cur_vertex = intersection_order[j];
-                int *cur_hashtable = hash_tables + hash_tables_offset[mapping[cur_vertex]];
-                int len = hash_tables_offset[mapping[cur_vertex] + 1] - hash_tables_offset[mapping[cur_vertex]]; // len记录当前hash_table的长度
+                cur_vertex = mapping[intersection_order[j]];
+                int *cur_hashtable = hash_tables + hash_tables_offset[cur_vertex];
+                int len = hash_tables_offset[cur_vertex + 1] - hash_tables_offset[cur_vertex]; // len记录当前hash_table的长度
 
                 int candidate_number_previous = candidate_number;
                 candidate_number = 0;
@@ -342,7 +342,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 int main(int argc, char *argv[])
 {
     // load graph file
-    string infilename = "../dataset/graph/as20000102_adj.mmio";
+    // string infilename = "../dataset/graph/as20000102_adj.mmio";
+    string infilename = "../dataset/graph/clique_6.mmio";
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/test.mmio";
     // string infilename = "../dataset/graph/test3.mmio";
