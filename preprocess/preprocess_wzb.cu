@@ -178,8 +178,29 @@ __inline__ __device__ void swap(int &a, int &b)
     b = t;
 }
 
-__device__ bool search_in_hashtable(int x, int *hash_table)
+__device__ bool search_in_hashtable(int x, int edge_count, int k, int hash_table_len, int *hash_table)
 {
+    int value = x % k;
+    int *cmp = hash_table;
+    int index = 0;
+    while (*cmp != -1)
+    {
+        if (*cmp == x)
+        {
+            return true;
+        }
+        cmp = cmp + edge_count;
+        index++;
+        if (index == bucket_size)
+        {
+            value++;
+            index = 0;
+            if (value == hash_table_len)
+                value = 0;
+            cmp = &hash_table[value];
+        }
+        // printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
+    }
     return true;
 }
 // h : height of subtree; h = pattern vertex number
@@ -251,9 +272,10 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 cur_vertex = intersection_order[j];
                 int *cur_hashtable = hash_tables + hash_tables_offset[mapping[cur_vertex]];
+                int len; //len记录当前hash_table的长度
                 for (int i = lid; i < candidate_number_previous; i += 32)
                 {
-                    search_in_hashtable(my_candidates[i], cur_hashtable);
+                    search_in_hashtable(my_candidates[i], edge_count, len, len * parameter, cur_hashtable);
                 }
                 candidate_number_previous = candidate_number;
             }
