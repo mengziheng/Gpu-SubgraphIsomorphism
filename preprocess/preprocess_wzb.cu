@@ -8,6 +8,7 @@
 #include <cooperative_groups.h>
 #include <thrust/extrema.h>
 #include <thrust/device_ptr.h>
+#define FULL_MASK 0xffffffff
 
 #define __max(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -260,6 +261,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             neighbour_numbers[0] = csr_row_value[mapping[intersection_order[0]]];
             for (int i = 1; i < intersection_order_length; i++)
             {
+                printf("vertex id: %d,graph vertex id:%d \n", mapping[intersection_order[i]], intersection_order[i]);
                 int degree = csr_row_value[mapping[intersection_order[i]]];
                 neighbour_numbers[i] = degree;
                 if (degree < neighbour_numbers[0])
@@ -280,8 +282,6 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             // intersect
 
             candidate_number = neighbour_numbers[0];
-            if (lid == 0)
-                printf("candidate_number %d \n", candidate_number);
             for (int j = 1; j < intersection_order_length; j++)
             {
                 cur_vertex = mapping[intersection_order[j]];
@@ -294,20 +294,24 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 {
                     __syncwarp();
                     int item = my_candidates[i];
-                    if (search_in_hashtable(item, edge_count, bucket_size, len * parameter, len, cur_hashtable))
+                    int is_exist = search_in_hashtable(item, edge_count, bucket_size, len * parameter, len, cur_hashtable);
+                    int count = __reduce_add_sync(FULL_MASK, is_exist);
+                    if (is_exist)
                     {
                         coalesced_group active = coalesced_threads();
                         my_candidates[active.thread_rank() + candidate_number] = my_candidates[i];
                         // ir[active.thread_rank() + ptr[in_block_wid] + wid * max_degree + level * 1024 * 216 / 32 * max_degree] = thread_cache[i];
-                        candidate_number += active.size();
                     }
+                    candidate_number += count;
                 }
             }
 
             if (level == h - 1)
             {
                 if (lid == 0)
+                {
                     my_count += candidate_number;
+                }
                 level--;
             }
             for (;; level--)
@@ -342,8 +346,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 int main(int argc, char *argv[])
 {
     // load graph file
-    // string infilename = "../dataset/graph/as20000102_adj.mmio";
-    string infilename = "../dataset/graph/clique_6.mmio";
+    string infilename = "../dataset/graph/as20000102_adj.mmio";
+    // string infilename = "../dataset/graph/clique_6.mmio";
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/test.mmio";
     // string infilename = "../dataset/graph/test3.mmio";
@@ -407,20 +411,21 @@ int main(int argc, char *argv[])
     printf("uCount : %d\n", uCount);
     // 写hash_table_offset
     buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
-    buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
+    buildHashTable<<<216, 512>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
-    int hash_tables[load_factor_inverse * edgeCount];
-    cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
-    for (int i = 0; i < 20; i++)
-    {
-        printf("%d ", hash_tables[i]);
-    }
-    printf("\n");
+    // int hash_tables[load_factor_inverse * edgeCount];
+    // cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
+    // for (int i = 0; i < 20; i++)
+    // {
+    //     printf("%d ", hash_tables[i]);
+    // }
+    // printf("\n");
 
     // DFS
     int *d_ir; // intermediate result;
-    HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    // refine the malloc
+    HRR(cudaMalloc(&d_ir, 2160 * 1024 / 32 * max_degree * pattern_vertex_number));
+    HRR(cudaMemset(d_ir, -1, 2160 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
     cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
@@ -440,12 +445,12 @@ int main(int argc, char *argv[])
     cudaMemset(d_sum, 0, 4);
     int csr_row_value[uCount];
     HRR(cudaMemcpy(csr_row_value, d_csr_row_value, uCount * sizeof(int), cudaMemcpyDeviceToHost));
-    // printf("csr_value is : ");
-    // for (int i = 0; i < uCount; i++)
-    // {
-    //     printf("%d ", csr_row_value[i]);
-    // }
-    // printf("\n");
+    printf("csr_value is : ");
+    for (int i = 0; i < uCount; i++)
+    {
+        printf("%d ", csr_row_value[i]);
+    }
+    printf("\n");
     DFSKernel<<<1, 32>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
     int sum;
     cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
