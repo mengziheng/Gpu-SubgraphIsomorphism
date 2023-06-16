@@ -201,7 +201,7 @@ __device__ bool search_in_hashtable(int x, int edge_count, int k, int hash_table
         }
         // printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
     }
-    return true;
+    return false;
 }
 // h : height of subtree; h = pattern vertex number
 __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int h, int bucket_size, int parameter, int *intersection_orders, int *intersection_offset, int *csr_row_offset, int *csr_row_value, int *csr_column_index, int *hash_tables_offset, int *hash_tables, int *candidates_of_all_warp, int *sum)
