@@ -358,6 +358,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 int main(int argc, char *argv[])
 {
     // load graph file
+    // string infilename = "../dataset/graph/as20000102_adj.mmio";
     string infilename = "/data/zh_dataset/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/clique_6.mmio";
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
@@ -436,8 +437,8 @@ int main(int argc, char *argv[])
     // DFS
     int *d_ir; // intermediate result;
     // refine the malloc
-    HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    HRR(cudaMalloc(&d_ir, 2160 * 1024 / 32 * max_degree * pattern_vertex_number));
+    HRR(cudaMemset(d_ir, -1, 2160 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
     cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
@@ -455,14 +456,14 @@ int main(int argc, char *argv[])
     int *d_sum;
     cudaMalloc(&d_sum, 4);
     cudaMemset(d_sum, 0, 4);
-    int csr_row_value[uCount];
-    HRR(cudaMemcpy(csr_row_value, d_csr_row_value, uCount * sizeof(int), cudaMemcpyDeviceToHost));
-    printf("csr_value is : ");
-    for (int i = 0; i < uCount; i++)
-    {
-        printf("%d ", csr_row_value[i]);
-    }
-    printf("\n");
+    // int csr_row_value[uCount];
+    // HRR(cudaMemcpy(csr_row_value, d_csr_row_value, uCount * sizeof(int), cudaMemcpyDeviceToHost));
+    // printf("csr_value is : ");
+    // for (int i = 0; i < uCount; i++)
+    // {
+    //     printf("%d ", csr_row_value[i]);
+    // }
+    // printf("\n");
     float gpu_elapsed_time;
     cudaEvent_t gpu_start, gpu_stop;
     cudaEventCreate(&gpu_start);
