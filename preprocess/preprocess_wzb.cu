@@ -178,7 +178,7 @@ __inline__ __device__ void swap(int &a, int &b)
     b = t;
 }
 
-__device__ bool search_in_hashtable(int x, int edge_count, int k, int hash_table_len, int *hash_table)
+__device__ bool search_in_hashtable(int x, int edge_count, int bucket_size, int k, int hash_table_len, int *hash_table)
 {
     int value = x % k;
     int *cmp = hash_table;
@@ -275,7 +275,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 int len = hash_tables_offset[mapping[cur_vertex] + 1] - hash_tables_offset[mapping[cur_vertex]]; // len记录当前hash_table的长度
                 for (int i = lid; i < candidate_number_previous; i += 32)
                 {
-                    search_in_hashtable(my_candidates[i], edge_count, len * parameter, len, cur_hashtable);
+                    search_in_hashtable(my_candidates[i], edge_count, bucket_size, len * parameter, len, cur_hashtable);
                 }
                 candidate_number_previous = candidate_number;
             }
@@ -309,10 +309,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     //     // atomicAdd(sum, warp_sum);
     //     printf("final sum is %d tid : %d\n", warp_sum, tid);
     // }
-    if (tid == 0)
+    if (lid == 0)
     {
-        printf("sum is %d\n", my_count);
-        sum[0] = warpsum[0];
+        atomicAdd(sum, warpsum[in_block_wid]);
     }
 }
 
