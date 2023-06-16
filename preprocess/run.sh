@@ -1,5 +1,5 @@
 rm -rf preprocess
 clear
-nvcc -Xptxas=“-v” -G preprocess.cu -o preprocess 
+nvcc -lineinfo -G -arch=sm_80 preprocess.cu -o preprocess 
 # nvcc -G -g preprocess.cu -o preprocess
 cuda-memcheck ./preprocess

@@ -169,20 +169,18 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int tid = blockIdx.x * blockDim.x + threadIdx.x; // threadid
     int wid = tid / 32;                              // warpid
     int in_block_wid = threadIdx.x / 32;
-    int lid = tid % 32; // landid
-    int level = 1;      // level of subtree,start from 0,not root for tree,but root for subtree
-    int cur_vertex = -1;
+    int lid = tid % 32;
     int stride = blockDim.x * gridDim.x / 32;
-    int *ir_number = new int[h]; // 记录一下每一层保存的数据大小
-    int *buffer = new int[h];    // 记录每次的中间结果
+    int level = 1;
+    int cur_vertex = -1;
+    int ir_number[3]; // 记录一下每一层保存的数据大小
+    int buffer[3];    // 记录每次的中间结果
     ir_number[level] = 0;
     __shared__ int warpsum[32];
     __shared__ int ptr[32];
     warpsum[in_block_wid] = 0;
     int FLAG = 0;
-    // each warp process a subtree (an probe item)
 
-    // while (FLAG != 300)
     while (true)
     {
         // 当前层为空
@@ -191,7 +189,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             if (level == 1)
             {
                 cur_vertex = getNewVertex(wid, cur_vertex, stride, vertex_count);
-                if (cur_vertex == -1)
+                if (cur_vertex == 2)
                 {
                     break;
                 }
@@ -275,7 +273,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     int hash_table_end = hash_tables_offset[buffer[intersection_order[cur_order_index]] + 1];
                     int hash_table_length = hash_table_end - hash_table_start;
                     // if (buffer[1] == 791 && thread_cache[i] == 1112)
-                        // printf("value : %d parameter is %d vertex : %d start : %d index : %d\n", value, neighbour_numbers[cur_order_index] * parameter, buffer[intersection_order[cur_order_index]], hash_table_start, hash_table_start + value + edge_count);
+                    // printf("value : %d parameter is %d vertex : %d start : %d index : %d\n", value, neighbour_numbers[cur_order_index] * parameter, buffer[intersection_order[cur_order_index]], hash_table_start, hash_table_start + value + edge_count);
                     int *cmp = &hash_tables[hash_table_start + value]; // wzb: remove edge count
                     int index = 0;
                     // printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
@@ -325,7 +323,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             if (level == h - 1)
             {
                 // if (lid == 0)
-                    // printf("buffer[0] is %d buffer[1] is %d number is %d\n", buffer[0], buffer[1], warpsum[in_block_wid]);
+                // printf("buffer[0] is %d buffer[1] is %d number is %d\n", buffer[0], buffer[1], warpsum[in_block_wid]);
                 level--;
                 delete (thread_cache);
                 continue;
@@ -334,7 +332,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 ir_number[level] = ptr[in_block_wid] - 1;
                 // if (lid == 0)
-                    // printf("not last vertex , neighbor is %d\n", ptr[in_block_wid]);
+                // printf("not last vertex , neighbor is %d\n", ptr[in_block_wid]);
                 if (ptr[in_block_wid] == 0)
                 {
                     if (level > 1)
@@ -368,7 +366,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
         __syncwarp();
         ir_number[level] = 0;
         // if (lid == 0)
-            // printf("-------------------\n");
+        // printf("-------------------\n");
         FLAG++;
     }
     delete (ir_number);
@@ -487,7 +485,23 @@ int main(int argc, char *argv[])
     int *d_sum;
     cudaMalloc(&d_sum, 4);
     cudaMemset(d_sum, 0, 4);
-    DFSKernel<<<128, 256>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
+
+    // set up timing variables
+    float gpu_elapsed_time;
+    cudaEvent_t gpu_start, gpu_stop;
+    cudaEventCreate(&gpu_start);
+    cudaEventCreate(&gpu_stop);
+    // copy from host to device
+    cudaEventRecord(gpu_start, 0);
+    DFSKernel<<<216, 256>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
+    cudaEventRecord(gpu_stop, 0);
+    cudaEventSynchronize(gpu_stop);
+    cudaEventElapsedTime(&gpu_elapsed_time, gpu_start, gpu_stop);
+    cudaEventDestroy(gpu_start);
+    cudaEventDestroy(gpu_stop);
+    // report results
+    std::cout << "The gpu took: " << gpu_elapsed_time << " milli-seconds" << std::endl;
+
     int sum;
     cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
     printf("triangle count is %d\n", sum);
