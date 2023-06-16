@@ -272,10 +272,10 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 cur_vertex = intersection_order[j];
                 int *cur_hashtable = hash_tables + hash_tables_offset[mapping[cur_vertex]];
-                int len; //len记录当前hash_table的长度
+                int len; // len记录当前hash_table的长度
                 for (int i = lid; i < candidate_number_previous; i += 32)
                 {
-                    search_in_hashtable(my_candidates[i], edge_count, len, len * parameter, cur_hashtable);
+                    search_in_hashtable(my_candidates[i], edge_count, len * parameter, len, cur_hashtable);
                 }
                 candidate_number_previous = candidate_number;
             }
