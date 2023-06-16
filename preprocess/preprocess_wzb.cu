@@ -195,10 +195,11 @@ __inline__ __device__ void swap(int &a, int &b)
 __device__ bool search_in_hashtable(int x, int edge_count, int bucket_size, int k, int hash_table_len, int *hash_table)
 {
     int value = x % k;
-    int *cmp = hash_table;
+    int *cmp = hash_table + value;
     int index = 0;
     while (*cmp != -1)
     {
+        // printf("cmp %d, x%d\n", *cmp, x);
         if (*cmp == x)
         {
             return true;
@@ -228,13 +229,13 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int *candidate_number_array = new int[h]; // 记录一下每一层保存的数据大小
     int *next_candidate_array = new int[h];   // 记录一下每一层保存的数据大小
     int *mapping = new int[h];                // 记录每次的中间结果
-    int *my_candidates_for_all_mapping = candidates_of_all_warp + wid * h * 32 * 216 * max_degree;
+    int *my_candidates_for_all_mapping = candidates_of_all_warp + wid * h * max_degree;
     int my_count = 0;
     __shared__ int warpsum[32];
     warpsum[in_block_wid] = 0;
     // each warp process a subtree (an probe item)
 
-    for (int start_vertex = wid; start_vertex < 1; start_vertex += stride)
+    for (int start_vertex = wid; start_vertex < vertex_count; start_vertex += stride)
     {
         mapping[0] = start_vertex;
         int level = 0;
@@ -285,8 +286,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 
             candidate_number = neighbour_numbers[0];
 
-            if (tid == 0)
-                printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
+            // if (tid == 0)
+            //     printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
             for (int j = 1; j < intersection_order_length; j++)
             {
                 cur_vertex = mapping[intersection_order[j]];
@@ -298,6 +299,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 for (int i = lid; i < candidate_number_previous; i += 32)
                 {
                     int item = my_candidates[i];
+                    // printf("item: %d\n", item);
                     int is_exist = search_in_hashtable(item, edge_count, bucket_size, len * parameter, len, cur_hashtable);
                     int count = __reduce_add_sync(__activemask(), is_exist);
                     if (is_exist)
@@ -310,8 +312,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 }
                 candidate_number = __shfl_sync(FULL_MASK, candidate_number, 0);
 
-                if (tid == 0)
-                    printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
+                // if (tid == 0)
+                //     printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
             }
             __syncwarp();
 
@@ -319,7 +321,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 if (lid == 0)
                 {
-                    printf("added value %d,count %d\n%", candidate_number, my_count);
+                    // printf("added value %d,count %d\n%", candidate_number, my_count);
                     my_count += candidate_number;
                 }
                 level--;
@@ -356,7 +358,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 int main(int argc, char *argv[])
 {
     // load graph file
-    string infilename = "../dataset/graph/as20000102_adj.mmio";
+    string infilename = "/data/zh_dataset/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/clique_6.mmio";
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/test.mmio";
@@ -434,8 +436,8 @@ int main(int argc, char *argv[])
     // DFS
     int *d_ir; // intermediate result;
     // refine the malloc
-    HRR(cudaMalloc(&d_ir, 2160 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(d_ir, -1, 2160 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    HRR(cudaMalloc(&d_ir, 216 * 1024 / 32 * max_degree * pattern_vertex_number));
+    HRR(cudaMemset(d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
     cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
@@ -461,11 +463,23 @@ int main(int argc, char *argv[])
         printf("%d ", csr_row_value[i]);
     }
     printf("\n");
-    DFSKernel<<<1, 32>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
+    float gpu_elapsed_time;
+    cudaEvent_t gpu_start, gpu_stop;
+    cudaEventCreate(&gpu_start);
+    cudaEventCreate(&gpu_stop);
+    // copy from host to device
+    cudaEventRecord(gpu_start, 0);
+    DFSKernel<<<216, 256>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
+    cudaDeviceSynchronize();
+    cudaEventRecord(gpu_stop, 0);
+    cudaEventSynchronize(gpu_stop);
+    cudaEventElapsedTime(&gpu_elapsed_time, gpu_start, gpu_stop);
+    cudaEventDestroy(gpu_start);
+    cudaEventDestroy(gpu_stop);
+    std::cout << "The gpu took: " << gpu_elapsed_time << " milli-seconds" << std::endl;
     int sum;
     cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
     printf("triangle count is %d\n", sum);
-    cudaDeviceSynchronize();
     // verify
     // int csr_column_index[edgeCount];
     // cudaMemcpy(csr_column_index, d_csr_column_index, edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
