@@ -5,7 +5,13 @@
             "label": "mynvcc",
             "type": "shell",
             "command": "nvcc",
-            "args": ["-G","-g","-o","${fileDirname}/preprocess","${file}"]
+            "args": [
+                "-O3",
+                "-arch=sm_80",
+                "-o",
+                "${fileDirname}/preprocess",
+                "${file}"
+            ]
         }
     ]
 }
