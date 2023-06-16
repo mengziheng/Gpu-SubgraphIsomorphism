@@ -243,6 +243,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             if (lid == 0)
                 printf("start_vertex %d level %d\n", start_vertex, level);
             int &candidate_number = candidate_number_array[level];
+            next_candidate_array[level] = -1;
             candidate_number = 0;
 
             // find possible connection and maintain in S
@@ -277,8 +278,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 my_candidates[i] = cur_neighbor_list[i];
             }
             // intersect
-            int candidate_number_previous = neighbour_numbers[0];
-            candidate_number = candidate_number_previous;
+
+            candidate_number = neighbour_numbers[0];
             if (lid == 0)
                 printf("candidate_number %d \n", candidate_number);
             for (int j = 1; j < intersection_order_length; j++)
@@ -286,11 +287,21 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 cur_vertex = intersection_order[j];
                 int *cur_hashtable = hash_tables + hash_tables_offset[mapping[cur_vertex]];
                 int len = hash_tables_offset[mapping[cur_vertex] + 1] - hash_tables_offset[mapping[cur_vertex]]; // len记录当前hash_table的长度
+
+                int candidate_number_previous = candidate_number;
+                candidate_number = 0;
                 for (int i = lid; i < candidate_number_previous; i += 32)
                 {
-                    search_in_hashtable(my_candidates[i], edge_count, bucket_size, len * parameter, len, cur_hashtable);
+                    __syncwarp();
+                    int item = my_candidates[i];
+                    if (search_in_hashtable(item, edge_count, bucket_size, len * parameter, len, cur_hashtable))
+                    {
+                        coalesced_group active = coalesced_threads();
+                        my_candidates[active.thread_rank() + candidate_number] = my_candidates[i];
+                        // ir[active.thread_rank() + ptr[in_block_wid] + wid * max_degree + level * 1024 * 216 / 32 * max_degree] = thread_cache[i];
+                        candidate_number += active.size();
+                    }
                 }
-                candidate_number_previous = candidate_number;
             }
 
             if (level == h - 1)
@@ -324,16 +335,16 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     // }
     if (lid == 0)
     {
-        atomicAdd(sum, warpsum[in_block_wid]);
+        atomicAdd(sum, my_count);
     }
 }
 
 int main(int argc, char *argv[])
 {
     // load graph file
-    // string infilename = "../dataset/graph/as20000102_adj.mmio";
+    string infilename = "../dataset/graph/as20000102_adj.mmio";
     // string infilename = "../dataset/graph/cit-Patents_adj.mmio";
-    string infilename = "../dataset/graph/test.mmio";
+    // string infilename = "../dataset/graph/test.mmio";
     // string infilename = "../dataset/graph/test3.mmio";
     loadgraph(infilename);
     bucket_num = edgeCount * load_factor_inverse / bucket_size;
