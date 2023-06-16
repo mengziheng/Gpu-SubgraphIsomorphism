@@ -8,6 +8,8 @@
 #include <cooperative_groups.h>
 #include <thrust/extrema.h>
 #include <thrust/device_ptr.h>
+#include <sys/time.h>
+
 #define FULL_MASK 0xffffffff
 
 #define __max(a, b) (((a) > (b)) ? (a) : (b))
@@ -30,6 +32,25 @@ int parameter = load_factor_inverse / bucket_size;
 int local_register_num = 2;
 int max_degree;                // 记录最大度数
 int pattern_vertex_number = 3; // pattern的节点数量
+
+double wtime()
+{
+    double time[2];
+    struct timeval time1;
+    gettimeofday(&time1, NULL);
+
+    time[0] = time1.tv_sec;
+    time[1] = time1.tv_usec;
+
+    return time[0] + time[1] * 1.0e-6;
+}
+
+double getDeltaTime(double &startTime)
+{
+    double deltaTime = wtime() - startTime;
+    startTime = wtime();
+    return deltaTime;
+}
 
 static void HandError(cudaError_t err, const char *file, int line)
 {
@@ -192,7 +213,7 @@ __inline__ __device__ void swap(int &a, int &b)
     b = t;
 }
 
-__device__ bool search_in_hashtable(int x, int edge_count, int bucket_size, int k, int hash_table_len, int *hash_table)
+__inline__ __device__ bool search_in_hashtable(int x, int edge_count, int bucket_size, int k, int hash_table_len, int *hash_table)
 {
     int value = x % k;
     int *cmp = hash_table + value;
@@ -223,18 +244,20 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 {
     int tid = blockIdx.x * blockDim.x + threadIdx.x; // threadid
     int wid = tid / 32;                              // warpid
-    int in_block_wid = threadIdx.x / 32;
+    // int in_block_wid = threadIdx.x / 32;
     int lid = tid % 32; // landid
     int stride = blockDim.x * gridDim.x / 32;
-    int *candidate_number_array = new int[h]; // 记录一下每一层保存的数据大小
-    int *next_candidate_array = new int[h];   // 记录一下每一层保存的数据大小
-    int *mapping = new int[h];                // 记录每次的中间结果
-    int *my_candidates_for_all_mapping = candidates_of_all_warp + wid * h * max_degree;
+    // int *candidate_number_array = new int[h]; // 记录一下每一层保存的数据大小
+    // int *next_candidate_array = new int[h];   // 记录一下每一层保存的数据大小
+    // int *mapping = new int[h];                // 记录每次的中间结果
+    int candidate_number_array[3]; // 记录一下每一层保存的数据大小
+    int next_candidate_array[3];   // 记录一下每一层保存的数据大小
+    int mapping[3];                // 记录每次的中间结果
+    int *my_candidates_for_all_mapping = candidates_of_all_warp + (long long)wid * h * max_degree;
     int my_count = 0;
-    __shared__ int warpsum[32];
-    warpsum[in_block_wid] = 0;
     // each warp process a subtree (an probe item)
-
+    if (tid == 0)
+        printf("wid %d", stride);
     for (int start_vertex = wid; start_vertex < vertex_count; start_vertex += stride)
     {
         mapping[0] = start_vertex;
@@ -257,6 +280,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 intersection_order[i] = intersection_orders[intersection_order_start + i];
             }
+
             // get degree
             int neighbour_numbers[2];
             neighbour_numbers[0] = csr_row_value[mapping[intersection_order[0]]];
@@ -288,6 +312,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 
             // if (tid == 0)
             //     printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
+
             for (int j = 1; j < intersection_order_length; j++)
             {
                 cur_vertex = mapping[intersection_order[j]];
@@ -324,6 +349,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     // printf("added value %d,count %d\n%", candidate_number, my_count);
                     my_count += candidate_number;
                 }
+                __syncwarp();
                 level--;
             }
             for (;; level--)
@@ -341,9 +367,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 break;
         }
     }
-    delete (mapping);
-    delete (candidate_number_array);
-    delete (next_candidate_array);
+    // delete (mapping);
+    // delete (candidate_number_array);
+    // delete (next_candidate_array);
     // if (wid == 0)
     // {
     //     // atomicAdd(sum, warp_sum);
@@ -395,7 +421,7 @@ int main(int argc, char *argv[])
     // mzh:可以重写为一个kernel，因为本质上都是reduction
     int *d_max_degree;
     // compute max degree
-    cudaMalloc((void **)&d_max_degree, sizeof(int));
+    cudaMalloc(&d_max_degree, sizeof(int));
     void *d_temp_storage = NULL;
     size_t temp_storage_bytes = 0;
     cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_csr_row_value, d_max_degree, uCount);
@@ -405,7 +431,7 @@ int main(int argc, char *argv[])
     cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_csr_row_value, d_max_degree, uCount);
     HRR(cudaMemcpy(&max_degree, d_max_degree, sizeof(int), cudaMemcpyDeviceToHost));
     std::cout << "max degree is: " << max_degree << std::endl;
-
+    // HRR(cudaMemcpy(d_max_degree, &max_degree, sizeof(int), cudaMemcpyHostToDevice));
     // get row_offset for CSR
     d_temp_storage = NULL;
     temp_storage_bytes = 0;
@@ -415,8 +441,8 @@ int main(int argc, char *argv[])
 
     // build hash table in device
     int *d_hash_tables;
-    HRR(cudaMalloc(&d_hash_tables, load_factor_inverse * edgeCount * sizeof(int)));
-    HRR(cudaMemset(d_hash_tables, -1, load_factor_inverse * edgeCount * sizeof(int)));
+    HRR(cudaMalloc(&d_hash_tables, (long long)load_factor_inverse * edgeCount * sizeof(int)));
+    HRR(cudaMemset(d_hash_tables, -1, (long long)load_factor_inverse * edgeCount * sizeof(int)));
     int *d_hash_tables_offset;
     HRR(cudaMalloc(&d_hash_tables_offset, (uCount + 1) * sizeof(int)));
     int *d_hash_table_parameters;
@@ -437,8 +463,8 @@ int main(int argc, char *argv[])
     // DFS
     int *d_ir; // intermediate result;
     // refine the malloc
-    HRR(cudaMalloc(&d_ir, 2160 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(d_ir, -1, 2160 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    HRR(cudaMalloc(&d_ir, (long long)216 * 32 * max_degree * pattern_vertex_number * sizeof(int)));
+    // HRR(cudaMemset(d_ir, -1, 216 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
     cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
@@ -448,10 +474,10 @@ int main(int argc, char *argv[])
     int *d_intersection_orders;
     int intersection_size = 4;
     cudaMalloc(&d_intersection_orders, intersection_size * sizeof(int));
-    HRR(cudaMemcpy(d_intersection_orders, intersection_orders, 16, cudaMemcpyHostToDevice));
+    HRR(cudaMemcpy(d_intersection_orders, intersection_orders, intersection_size * sizeof(int), cudaMemcpyHostToDevice));
     int *d_intersection_offset;
     cudaMalloc(&d_intersection_offset, intersection_size * sizeof(int));
-    HRR(cudaMemcpy(d_intersection_offset, intersection_offset, 16, cudaMemcpyHostToDevice));
+    HRR(cudaMemcpy(d_intersection_offset, intersection_offset, intersection_size * sizeof(int), cudaMemcpyHostToDevice));
     int h = 3;
     int *d_sum;
     cudaMalloc(&d_sum, 4);
@@ -464,20 +490,10 @@ int main(int argc, char *argv[])
     //     printf("%d ", csr_row_value[i]);
     // }
     // printf("\n");
-    float gpu_elapsed_time;
-    cudaEvent_t gpu_start, gpu_stop;
-    cudaEventCreate(&gpu_start);
-    cudaEventCreate(&gpu_stop);
-    // copy from host to device
-    cudaEventRecord(gpu_start, 0);
-    DFSKernel<<<216, 256>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
-    cudaDeviceSynchronize();
-    cudaEventRecord(gpu_stop, 0);
-    cudaEventSynchronize(gpu_stop);
-    cudaEventElapsedTime(&gpu_elapsed_time, gpu_start, gpu_stop);
-    cudaEventDestroy(gpu_start);
-    cudaEventDestroy(gpu_stop);
-    std::cout << "The gpu took: " << gpu_elapsed_time << " milli-seconds" << std::endl;
+    double start_time = wtime();
+    DFSKernel<<<216, 1024>>>(uCount, edgeCount, max_degree, h, bucket_size, parameter, d_intersection_orders, d_intersection_offset, d_csr_row_offset, d_csr_row_value, d_csr_column_index, d_hash_tables_offset, d_hash_tables, d_ir, d_sum);
+    HRR(cudaDeviceSynchronize());
+    std::cout << "The gpu took: " << getDeltaTime(start_time) * 1000 << " ms" << std::endl;
     int sum;
     cudaMemcpy(&sum, d_sum, 4, cudaMemcpyDeviceToHost);
     printf("triangle count is %d\n", sum);
