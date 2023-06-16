@@ -3297,3 +3297,19 @@ Current buffer is {0,779}
 sum is 1325
 triangle count is 1325
 ========= ERROR SUMMARY: 0 errors
+
+neighbour_number[0] : 378 neighbour_number[1] : 6
+buffer[0] : 0 buffer[1] : 791
+tid 0 cmp : 1112 && cache is 1112
+tid 1 cmp : 957 && cache is 1335
+tid 2 cmp : 5112 && cache is 5112
+tid 3 cmp : 6208 && cache is 6208
+tid 4 cmp : 6363 && cache is 6363
+tid 5 cmp : -1 && cache is 6398
+tid 1 cmp : 1335 && cache is 1335
+level is 2 cache is 1112 active.size is 5
+level is 2 cache is 1335 active.size is 5
+level is 2 cache is 5112 active.size is 5
+level is 2 cache is 6208 active.size is 5
+level is 2 cache is 6363 active.size is 5
+buffer[0] is 0 buffer[1] is 791 number is 475
