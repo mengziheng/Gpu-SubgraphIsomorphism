@@ -115,33 +115,46 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
     int hash_table_end;
     int hash_table_length;
     int value;
+    int bucket_number = edge_count * load_factor_inverse / bucket_size;
     for (int i = tid; i < edge_count; i += stride)
     {
-        // edgelist要不要用share_memory赌气来
+        // edgelist要不要用share_memory?
         key = edgelist[i * 2];
         vertex = edgelist[i * 2 + 1];
         hash_table_start = hash_tables_offset[vertex];
-        hash_table_end = hash_tables_offset[vertex + 1] - 1;
-        hash_table_length = hash_table_end - hash_table_start + 1;
+        hash_table_end = hash_tables_offset[vertex + 1];
+        hash_table_length = hash_table_end - hash_table_start;
         // hash function就选择为%k好了
         value = key % hash_table_length;
+        if (key == 1112 && vertex == 0)
+            printf("value : %d parameter is %d vertex : 0 bucket_len = %d start : %d index is :%d\n", value, hash_table_length, hash_tables[hash_table_start + value], hash_table_start, hash_table_start + value + (hash_tables[hash_table_start + value] + 1) * edge_count);
         // 按列存储
-        // len这一行可以存到shared memory中加快速度
-        hash_tables[hash_table_start + value] = 0;
-        int bucket_len = 0;
+
+        int index = 0;
         // 找到当前hash_tables中不满的bucket
         // if (i == 10000)
         //     printf("start %d end %d len %d key %d vertex %d\n", hash_table_start, hash_table_end, hash_table_length, key, vertex);
-        while (bucket_len == bucket_size - 1)
+        // while (hash_tables[hash_table_start + value + index * edge_count] != -1 )
+        if (hash_table_start + value + index * edge_count > 4 * edge_count)
+            printf("FUCK!!! index : %d value : %d\n", index, value);
+        while (atomicCAS(&hash_tables[hash_table_start + value + index * edge_count], -1, key) != -1)
         {
+            if (hash_table_start + value + index * edge_count > 4 * edge_count)
+                printf("FUCK!!! index : %d value : %d\n", index, value);
             // 这里要注意，因为是向后增加元素，万一这是最后一个元素怎么办？会造成前面的元素多，后面的元素少。
-            value++;
-            if (value == hash_table_length)
-                value = 0;
-            bucket_len = hash_tables[hash_table_start + value];
+            index++;
+            if (index == bucket_size)
+            {
+                index = 0;
+                value++;
+                if (value == hash_table_length)
+                    value = 0;
+            }
         }
-        hash_tables[hash_table_start + value + (bucket_len + 1) * edge_count] = key;
-        atomicAdd(hash_tables + hash_table_start + value, 1);
+        if (key == 1112 && vertex == 0)
+            printf("True index is : %d, value is %d\n", hash_table_start + value + index * edge_count, value);
+        if (hash_table_start + value + index * edge_count == 12773)
+            printf("why : %d %d\n", key, vertex);
     }
 }
 
@@ -190,8 +203,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     int FLAG = 0;
     // each warp process a subtree (an probe item)
 
-    while (FLAG != 300)
-    // while (true)
+    // while (FLAG != 300)
+    while (true)
     {
         // 当前层为空
         if (ir_number[level] == 0)
@@ -199,7 +212,7 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             if (level == 1)
             {
                 cur_vertex = getNewVertex(wid, cur_vertex, stride, vertex_count);
-                if (cur_vertex == 1)
+                if (cur_vertex == -1)
                 {
                     break;
                 }
@@ -282,33 +295,32 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     int hash_table_start = hash_tables_offset[buffer[intersection_order[cur_order_index]]];
                     int hash_table_end = hash_tables_offset[buffer[intersection_order[cur_order_index]] + 1];
                     int hash_table_length = hash_table_end - hash_table_start;
-                    int *cmp = &hash_tables[hash_table_start + value + edge_count]; // wzb: remove edge count
+                    if (buffer[1] == 791 && thread_cache[i] == 1112)
+                        printf("value : %d parameter is %d vertex : %d start : %d index : %d\n", value, neighbour_numbers[cur_order_index] * parameter, buffer[intersection_order[cur_order_index]], hash_table_start, hash_table_start + value + edge_count);
+                    int *cmp = &hash_tables[hash_table_start + value]; // wzb: remove edge count
                     int index = 0;
-                    if (buffer[1] == 780)
-                        printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
+                    printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
                     while (*cmp != -1)
                     {
 
                         if (*cmp == thread_cache[i])
                         {
-                            printf("cmp is %d,cache is %d\n", *cmp, *cmp);
                             break;
                         }
                         cmp = cmp + edge_count;
-                        if (buffer[1] == 780)
-                            printf("tid %d cmp : %d && cache is %d 2\n", tid, *cmp, thread_cache[i]);
                         index++;
                         if (index == bucket_size)
                         {
                             value++;
+                            index = 0;
                             if (value == hash_table_length)
                                 value = 0;
-                            cmp = &hash_tables[hash_table_start + value + edge_count];
+                            cmp = &hash_tables[hash_table_start + value];
                         }
-
-                        if (*cmp == -1)
-                            thread_cache[i] = -1;
+                        printf("tid %d cmp : %d && cache is %d\n", tid, *cmp, thread_cache[i]);
                     }
+                    if (*cmp == -1)
+                        thread_cache[i] = -1;
                 }
                 __syncwarp();
                 if (thread_cache[i] != -1)
@@ -462,7 +474,7 @@ int main(int argc, char *argv[])
     printf("uCount : %d\n", uCount);
     // 写hash_table_offset
     buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
-    buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
+    buildHashTable<<<216, 512>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
     int hash_tables[load_factor_inverse * edgeCount];
     cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
