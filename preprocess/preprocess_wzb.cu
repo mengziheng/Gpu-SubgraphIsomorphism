@@ -234,19 +234,19 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
     warpsum[in_block_wid] = 0;
     // each warp process a subtree (an probe item)
 
-    for (int start_vertex = wid; start_vertex < vertex_count; start_vertex += stride)
+    for (int start_vertex = wid; start_vertex < 1; start_vertex += stride)
     {
         mapping[0] = start_vertex;
         int level = 0;
         for (;;)
         {
             level++;
-            if (lid == 0)
-                printf("start_vertex %d level %d\n", start_vertex, level);
+            // if (lid == 0)
+            //     printf("start_vertex %d level %d\n", start_vertex, level);
             int &candidate_number = candidate_number_array[level];
             next_candidate_array[level] = -1;
             candidate_number = 0;
-
+            __syncwarp();
             // find possible connection and maintain in S
             int intersection_order_start = intersection_offset[level - 1];
             int intersection_order_end = intersection_offset[level];
@@ -261,7 +261,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             neighbour_numbers[0] = csr_row_value[mapping[intersection_order[0]]];
             for (int i = 1; i < intersection_order_length; i++)
             {
-                printf("vertex id: %d,graph vertex id:%d \n", mapping[intersection_order[i]], intersection_order[i]);
+                // if (lid == 0)
+                // printf("vertex id: %d,graph vertex id:%d, candidate_number, %d next candidate, %d\n", mapping[intersection_order[i]], intersection_order[i], candidate_number_array[level - 1], next_candidate_array[level - 1]);
                 int degree = csr_row_value[mapping[intersection_order[i]]];
                 neighbour_numbers[i] = degree;
                 if (degree < neighbour_numbers[0])
@@ -279,9 +280,13 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
             {
                 my_candidates[i] = cur_neighbor_list[i];
             }
+            __syncwarp();
             // intersect
 
             candidate_number = neighbour_numbers[0];
+
+            if (tid == 0)
+                printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
             for (int j = 1; j < intersection_order_length; j++)
             {
                 cur_vertex = mapping[intersection_order[j]];
@@ -292,10 +297,9 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                 candidate_number = 0;
                 for (int i = lid; i < candidate_number_previous; i += 32)
                 {
-                    __syncwarp();
                     int item = my_candidates[i];
                     int is_exist = search_in_hashtable(item, edge_count, bucket_size, len * parameter, len, cur_hashtable);
-                    int count = __reduce_add_sync(FULL_MASK, is_exist);
+                    int count = __reduce_add_sync(__activemask(), is_exist);
                     if (is_exist)
                     {
                         coalesced_group active = coalesced_threads();
@@ -304,12 +308,18 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
                     }
                     candidate_number += count;
                 }
+                candidate_number = __shfl_sync(FULL_MASK, candidate_number, 0);
+
+                if (tid == 0)
+                    printf("level:%d,index:%dcandidate_number %d\n", level, next_candidate_array[level - 1], candidate_number);
             }
+            __syncwarp();
 
             if (level == h - 1)
             {
                 if (lid == 0)
                 {
+                    printf("added value %d,count %d\n%", candidate_number, my_count);
                     my_count += candidate_number;
                 }
                 level--;
