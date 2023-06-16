@@ -115,33 +115,46 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
     int hash_table_end;
     int hash_table_length;
     int value;
+    int bucket_number = edge_count * load_factor_inverse / bucket_size;
     for (int i = tid; i < edge_count; i += stride)
     {
-        // edgelist要不要用share_memory赌气来
+        // edgelist要不要用share_memory?
         key = edgelist[i * 2];
         vertex = edgelist[i * 2 + 1];
         hash_table_start = hash_tables_offset[vertex];
-        hash_table_end = hash_tables_offset[vertex + 1] - 1;
-        hash_table_length = hash_table_end - hash_table_start + 1;
+        hash_table_end = hash_tables_offset[vertex + 1];
+        hash_table_length = hash_table_end - hash_table_start;
         // hash function就选择为%k好了
         value = key % hash_table_length;
+        if (key == 1112 && vertex == 0)
+            printf("value : %d parameter is %d vertex : 0 bucket_len = %d start : %d index is :%d\n", value, hash_table_length, hash_tables[hash_table_start + value], hash_table_start, hash_table_start + value + (hash_tables[hash_table_start + value] + 1) * edge_count);
         // 按列存储
-        // len这一行可以存到shared memory中加快速度
-        hash_tables[hash_table_start + value] = 0;
-        int bucket_len = 0;
+
+        int index = 0;
         // 找到当前hash_tables中不满的bucket
         // if (i == 10000)
         //     printf("start %d end %d len %d key %d vertex %d\n", hash_table_start, hash_table_end, hash_table_length, key, vertex);
-        while (bucket_len == bucket_size - 1)
+        // while (hash_tables[hash_table_start + value + index * edge_count] != -1 )
+        if (hash_table_start + value + index * edge_count > 4 * edge_count)
+            printf("FUCK!!! index : %d value : %d\n", index, value);
+        while (atomicCAS(&hash_tables[hash_table_start + value + index * edge_count], -1, key) != -1)
         {
+            if (hash_table_start + value + index * edge_count > 4 * edge_count)
+                printf("FUCK!!! index : %d value : %d\n", index, value);
             // 这里要注意，因为是向后增加元素，万一这是最后一个元素怎么办？会造成前面的元素多，后面的元素少。
-            value++;
-            if (value == hash_table_length)
-                value = 0;
-            bucket_len = hash_tables[hash_table_start + value];
+            index++;
+            if (index == bucket_size)
+            {
+                index = 0;
+                value++;
+                if (value == hash_table_length)
+                    value = 0;
+            }
         }
-        hash_tables[hash_table_start + value + (bucket_len + 1) * edge_count] = key;
-        atomicAdd(hash_tables + hash_table_start + value, 1);
+        if (key == 1112 && vertex == 0)
+            printf("True index is : %d, value is %d\n", hash_table_start + value + index * edge_count, value);
+        if (hash_table_start + value + index * edge_count == 12773)
+            printf("why : %d %d\n", key, vertex);
     }
 }
 
