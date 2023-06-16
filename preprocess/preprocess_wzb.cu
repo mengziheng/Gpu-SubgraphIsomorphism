@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
     printf("uCount : %d\n", uCount);
     // 写hash_table_offset
     buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
-    buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
+    buildHashTable<<<216, 512>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
     int hash_tables[load_factor_inverse * edgeCount];
     cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);

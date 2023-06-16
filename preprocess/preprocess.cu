@@ -88,10 +88,6 @@ __global__ void translateIntoCSRKernel(int *edgelist, int edgeCount, int vertexC
         atomicAdd(csr_row_value + edgelist[i * 2 + 1], 1);
         csr_column_index[i] = edgelist[i * 2];
     }
-    // for (int i = threadIdx.x; i < vertexCount; i += blockDim.x)
-    // {
-    //     atomicAdd(&csr_row_value[i], s_csr_row_value[i]);
-    // }
 }
 
 __global__ void buildHashTableOffset(int *hash_tables_offset, int *csr_row_offset, int *csr_row_value, int vertex_count, int parameter)
@@ -101,8 +97,6 @@ __global__ void buildHashTableOffset(int *hash_tables_offset, int *csr_row_offse
     csr_row_offset[vertex_count] = csr_row_offset[vertex_count - 1] + csr_row_value[vertex_count - 1];
     for (int i = tid; i < vertex_count + 1; i += stride)
         hash_tables_offset[i] = csr_row_offset[i] * parameter;
-    // if (tid == 0)
-    //     printf("%d\n", parameter);
 }
 
 __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *hash_table_parameters, int *csr_row_offset, int *edgelist, int vertex_count, int edge_count, int bucket_size, int load_factor_inverse)
@@ -116,6 +110,7 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
     int hash_table_length;
     int value;
     int bucket_number = edge_count * load_factor_inverse / bucket_size;
+    int index;
     for (int i = tid; i < edge_count; i += stride)
     {
         // edgelist要不要用share_memory?
@@ -126,22 +121,10 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
         hash_table_length = hash_table_end - hash_table_start;
         // hash function就选择为%k好了
         value = key % hash_table_length;
-        if (key == 1112 && vertex == 0)
-            printf("value : %d parameter is %d vertex : 0 bucket_len = %d start : %d index is :%d\n", value, hash_table_length, hash_tables[hash_table_start + value], hash_table_start, hash_table_start + value + (hash_tables[hash_table_start + value] + 1) * edge_count);
         // 按列存储
-
-        int index = 0;
-        // 找到当前hash_tables中不满的bucket
-        // if (i == 10000)
-        //     printf("start %d end %d len %d key %d vertex %d\n", hash_table_start, hash_table_end, hash_table_length, key, vertex);
-        // while (hash_tables[hash_table_start + value + index * edge_count] != -1 )
-        if (hash_table_start + value + index * edge_count > 4 * edge_count)
-            printf("FUCK!!! index : %d value : %d\n", index, value);
+        index = 0;
         while (atomicCAS(&hash_tables[hash_table_start + value + index * edge_count], -1, key) != -1)
         {
-            if (hash_table_start + value + index * edge_count > 4 * edge_count)
-                printf("FUCK!!! index : %d value : %d\n", index, value);
-            // 这里要注意，因为是向后增加元素，万一这是最后一个元素怎么办？会造成前面的元素多，后面的元素少。
             index++;
             if (index == bucket_size)
             {
@@ -151,10 +134,6 @@ __global__ void buildHashTable(int *hash_tables_offset, int *hash_tables, int *h
                     value = 0;
             }
         }
-        if (key == 1112 && vertex == 0)
-            printf("True index is : %d, value is %d\n", hash_table_start + value + index * edge_count, value);
-        if (hash_table_start + value + index * edge_count == 12773)
-            printf("why : %d %d\n", key, vertex);
     }
 }
 
@@ -403,8 +382,8 @@ __global__ void DFSKernel(int vertex_count, int edge_count, int max_degree, int 
 int main(int argc, char *argv[])
 {
     // load graph file
-    // string infilename = "../dataset/graph/as20000102_adj.mmio";
-    string infilename = "/data/zh_dataset/cit-Patents_adj.mmio";
+    string infilename = "../dataset/graph/as20000102_adj.mmio";
+    // string infilename = "/data/zh_dataset/cit-Patents_adj.mmio";
     // string infilename = "../dataset/graph/test2.mmio";
     // string infilename = "../dataset/graph/test3.mmio";
     // string infilename = "../dataset/graph/clique_6.mmio";
@@ -476,7 +455,7 @@ int main(int argc, char *argv[])
     printf("uCount : %d\n", uCount);
     // 写hash_table_offset
     buildHashTableOffset<<<216, 1024>>>(d_hash_tables_offset, d_csr_row_offset, d_csr_row_value, uCount, parameter);
-    buildHashTable<<<216, 512>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
+    buildHashTable<<<216, 1024>>>(d_hash_tables_offset, d_hash_tables, d_hash_table_parameters, d_csr_row_offset, d_edgelist, uCount, edgeCount, bucket_size, load_factor_inverse);
 
     // int hash_tables[load_factor_inverse * edgeCount];
     // cudaMemcpy(hash_tables, d_hash_tables, load_factor_inverse * edgeCount * sizeof(int), cudaMemcpyDeviceToHost);
@@ -489,8 +468,8 @@ int main(int argc, char *argv[])
     // DFS
     int *d_ir; // intermediate result;
     // mzh : 这里有问题
-    HRR(cudaMalloc(&d_ir, 2160 * 1024 / 32 * max_degree * pattern_vertex_number));
-    HRR(cudaMemset(d_ir, -1, 2160 * 1024 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
+    HRR(cudaMalloc(&d_ir, 216 * 10240 / 32 * max_degree * pattern_vertex_number));
+    HRR(cudaMemset(d_ir, -1, 216 * 10240 / 32 * max_degree * pattern_vertex_number)); // 初始值默认为-1
     cout << "ir memory size is : " << 216 * 1024 / 32 * max_degree * pattern_vertex_number << endl;
     // int *final_result; // 暂时先用三角形考虑。
     // HRR(cudaMalloc(&d_ir_ptr, 216 * 1024 / 32 * pattern_vertex_number));
