@@ -9,9 +9,15 @@
 
 using namespace std;
 
+__global__ void test(int n)
+{
+    int tid = threadIdx.x;
+    int arr[n];
+}
+
 int main(int argc, char *argv[])
 {
-    for (int i = 1; i < = 10; i++)
-        for (int j = i + 1; j <= 10; j++)
-            printf("%d %d 1\n", j, i);
+    int n = 4;
+    test<<<1, 32>>>(n);
+    cudaDeviceSynchronize();
 }
