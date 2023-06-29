@@ -1,0 +1,1 @@
+nvcc -lineinfo -O3 -arch=sm_80 main.cu -o main && ./main 
