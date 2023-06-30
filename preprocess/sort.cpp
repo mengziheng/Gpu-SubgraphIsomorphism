@@ -221,10 +221,10 @@ void computeCSR(int k)
     {
         Infilename.erase(Infilename.size() - 5);
     }
-    ofstream beginFile("/data/zh_dataset/mydata/" + Infilename + "/begin.bin", ios::out | ios::binary);
-    ofstream adjFile("/data/zh_dataset/mydata/" + Infilename + "/adjacent.bin", ios::out | ios::binary);
-    ofstream edgeFile("/data/zh_dataset/mydata/" + Infilename + "/edge", ios::out | ios::binary);
-    ofstream vertexFile("/data/zh_dataset/mydata/" + Infilename + "/vertex", ios::out | ios::binary);
+    ofstream beginFile("/data/zh_dataset/dataforclique/" + Infilename + "/begin.bin", ios::out | ios::binary);
+    ofstream adjFile("/data/zh_dataset/dataforclique/" + Infilename + "/adjacent.bin", ios::out | ios::binary);
+    ofstream edgeFile("/data/zh_dataset/dataforclique/" + Infilename + "/edge", ios::out | ios::binary);
+    ofstream vertexFile("/data/zh_dataset/dataforclique/" + Infilename + "/vertex", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
