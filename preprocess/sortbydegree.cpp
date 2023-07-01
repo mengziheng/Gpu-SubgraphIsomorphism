@@ -113,6 +113,7 @@ void loadEdgeList(string path)
     ofstream adjFile("/data/zh_dataset/dataforgeneral/" + path + "/adjacent.bin", ios::out | ios::binary);
     ofstream edgeFile("/data/zh_dataset/dataforgeneral/" + path + "/edge", ios::out | ios::binary);
     ofstream vertexFile("/data/zh_dataset/dataforgeneral/" + path + "/vertex", ios::out | ios::binary);
+    ofstream vertexFile("/data/zh_dataset/dataforgeneral/" + path + "/edgelist", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -155,7 +156,7 @@ void loadEdgeList(string path)
 int main(int argc, char *argv[])
 {
     string path;
-    path = "4-cycle.mmio";
+    path = "square.mmio";
     if (argc > 1)
     {
         path = argv[1];

@@ -303,7 +303,21 @@ __global__ void DFSKernel(int vertex_count, int bucket_num, int max_degree, int 
                 next_candidate_array[level]++;
                 if (next_candidate_array[level] < candidate_number_array[level])
                 {
-                    mapping[level] = my_candidates_for_all_mapping[level * max_degree + next_candidate_array[level]];
+                    int flag;
+                    do
+                    {
+                        flag = 1;
+                        for (int i = 0; i < level - 1; i++)
+                        {
+                            if (mapping[i] == my_candidates_for_all_mapping[level * max_degree + next_candidate_array[level]])
+                                flag = 0;
+                        }
+                        if (flag == 1)
+                            mapping[level] = my_candidates_for_all_mapping[level * max_degree + next_candidate_array[level]];
+                        else
+                            next_candidate_array[level]++;
+                    } while (flag == 1);
+
                     break;
                 }
             }
