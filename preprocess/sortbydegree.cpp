@@ -110,7 +110,7 @@ void loadEdgeList(string path)
         path.erase(path.size() - 5);
     }
     ofstream beginFile("/data/zh_dataset/dataforgeneral/" + path + "/begin.bin", ios::out | ios::binary);
-    ofstream adjFile("/data/zh_dataset/dataforgeneral/" + path + "/adj.bin", ios::out | ios::binary);
+    ofstream adjFile("/data/zh_dataset/dataforgeneral/" + path + "/adjacent.bin", ios::out | ios::binary);
     ofstream edgeFile("/data/zh_dataset/dataforgeneral/" + path + "/edge", ios::out | ios::binary);
     ofstream vertexFile("/data/zh_dataset/dataforgeneral/" + path + "/vertex", ios::out | ios::binary);
     if (!beginFile)
