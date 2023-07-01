@@ -3,6 +3,7 @@ Gpu-friendly SubgraphIsomorphism based on WOJ
 
 ## Compile and Run code
 For small graph, we don't partition the graph. 
+
 Compile the code:
     make
 Run the code:
