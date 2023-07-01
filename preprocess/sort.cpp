@@ -225,6 +225,7 @@ void computeCSR(int k)
     ofstream adjFile("/data/zh_dataset/dataforclique/" + Infilename + "/adjacent.bin", ios::out | ios::binary);
     ofstream edgeFile("/data/zh_dataset/dataforclique/" + Infilename + "/edge", ios::out | ios::binary);
     ofstream vertexFile("/data/zh_dataset/dataforclique/" + Infilename + "/vertex", ios::out | ios::binary);
+    ofstream edgelistFile("/data/zh_dataset/dataforclique/" + Infilename + "/edgelist", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -257,14 +258,19 @@ void computeCSR(int k)
         // cout << divide << ' ' << vertex[i].edge.size() << endl;
         int size = vertex[i].edge.size();
         edgeFile.write((char *)&size, sizeof(int));
-        for (int j = 0; j < vertex[i].edge.size(); j++)
+        for (int j = 0; j < vertex[i].edge.size(); j++){
             vertexFile.write((char *)&i, sizeof(int));
+            edgelistFile.write((char *)&i, sizeof(int));
+            edgelistFile.write((char *)&vertex[i].edge[j], sizeof(int));
+        }
+            
         adjFile.write((char *)&vertex[i].edge[0], sizeof(int) * vertex[i].edge.size());
     }
     beginFile.write((char *)&sum, sizeof(int));
 }
 int main(int argc, char *argv[])
 {
+    Infilename = "test_2.mmio";
     if (argc > 1)
     {
         Infilename = argv[1];

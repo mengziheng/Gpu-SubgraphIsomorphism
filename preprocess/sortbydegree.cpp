@@ -113,7 +113,7 @@ void loadEdgeList(string path)
     ofstream adjFile("/data/zh_dataset/dataforgeneral/" + path + "/adjacent.bin", ios::out | ios::binary);
     ofstream edgeFile("/data/zh_dataset/dataforgeneral/" + path + "/edge", ios::out | ios::binary);
     ofstream vertexFile("/data/zh_dataset/dataforgeneral/" + path + "/vertex", ios::out | ios::binary);
-    ofstream vertexFile("/data/zh_dataset/dataforgeneral/" + path + "/edgelist", ios::out | ios::binary);
+    ofstream edgelistFile("/data/zh_dataset/dataforgeneral/" + path + "/edgelist", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -141,22 +141,24 @@ void loadEdgeList(string path)
         beginFile.write((char *)&sum, sizeof(int));
         sum += idDegree[i].degree;
         edgeFile.write((char *)&idDegree[i].degree, sizeof(int));
-        for (int j = 0; j < idDegree[i].degree; j++)
+        for (int j = 0; j < idDegree[i].degree; j++){
             vertexFile.write((char *)&i, sizeof(int));
+            edgelistFile.write((char *)&i, sizeof(int));
+            edgelistFile.write((char *)&b[vertex][j], sizeof(int));
+        }
         adjFile.write((char *)&b[vertex][0], sizeof(int) * idDegree[i].degree);
     }
     beginFile.write((char *)&sum, sizeof(int));
-    ofstream propertiesFile("/data/zh_dataset/dataforgeneral/" + path + "/properties.txt", ios::out);
-    propertiesFile << 0 << ' ' << vertexCount << ' ' << sum << endl;
     beginFile.close();
     adjFile.close();
-    propertiesFile.close();
+    edgelistFile.close();
+    vertexFile.close();
 }
 
 int main(int argc, char *argv[])
 {
     string path;
-    path = "square.mmio";
+    path = "test_2.mmio";
     if (argc > 1)
     {
         path = argv[1];
