@@ -4,18 +4,22 @@
 #include <cstdio>
 #include <vector>
 #include <sstream>
+#include <memory>
 #define bounder 100
 #define MIN_BUCKET_NUM 8
-
 using namespace std;
-typedef long long index_t;
-string Infilename = "1.mmio";
+
+string inFileName;
+string dirName;
+string genericGraphFile = "/data/zh_dataset/graph_preprocessed/generic_graph_preprocessed/";
+string cliqueGraphFile = "/data/zh_dataset/graph_preprocessed/clique_graph_preprocessed/";
 
 int vertex_count, edge_count;
 typedef struct edge_list
 {
     int vertexID;
     vector<int> edge;
+    int degree;
     int newid;
 };
 vector<edge_list> vertex;
@@ -31,6 +35,10 @@ bool cmp2(edge_list a, edge_list b)
 bool cmp3(int a, int b)
 {
     return a % MIN_BUCKET_NUM < b % MIN_BUCKET_NUM;
+}
+bool cmp_degree(edge_list a, edge_list b)
+{
+    return (a.degree > b.degree) || (a.degree == b.degree && a.vertexID < b.vertexID);
 }
 
 int binary_search(int value)
@@ -50,7 +58,7 @@ int binary_search(int value)
 
 void loadgraph()
 {
-    ifstream inFile("/data/zh_dataset/graph/" + Infilename, ios::in);
+    ifstream inFile("/data/zh_dataset/graph/" + inFileName, ios::in);
     if (!inFile)
     {
         cout << "error" << endl;
@@ -85,6 +93,119 @@ void loadgraph()
         vertex[u].edge.push_back(v);
         vertex[v].edge.push_back(u);
     }
+    for (int i = 0; i < vertex_count; i++)
+        vertex[i].degree = vertex[i].edge.size();
+}
+
+string removeSuffix(const string &str)
+{
+    // 查找点号的位置
+    size_t dotPos = str.find('.');
+    if (dotPos != string::npos)
+    {
+        // 去掉点号及其后面的内容
+        string result = str.substr(0, dotPos);
+        // 查找"_adj"的位置
+        size_t adjPos = result.find("_adj");
+        if (adjPos != string::npos)
+        {
+            // 去掉末尾的"_adj"
+            result = result.substr(0, adjPos);
+        }
+        return result;
+    }
+    else
+    {
+        // 没有点号，则直接去掉末尾的"_adj"
+        size_t adjPos = str.find("_adj");
+        if (adjPos != string::npos)
+        {
+            return str.substr(0, adjPos);
+        }
+    }
+    // 如果没有点号和"_adj"，则返回原字符串
+    return str;
+}
+
+void removeDuplicatedEdgeAndSelfLoop()
+{
+    for (int i = 0; i < vertex_count; i++)
+    {
+        sort(vertex[i].edge.begin(), vertex[i].edge.end());
+        vector<int> a;
+        int previous = -1;
+        for (auto item : vertex[i].edge)
+        {
+            if (item != previous)
+            {
+                previous = item;
+                if (item != i)
+                    a.push_back(item);
+            }
+        }
+        vertex[i].edge.swap(a);
+    }
+}
+
+// for undirected graph , degree bigger , id smaller
+void saveUndirectedGraph()
+{
+    printf("vertex_count : %d edge_count : %d\n", vertex_count, edge_count);
+    vector<edge_list> vertex_for_generic = vertex;
+    sort(vertex_for_generic.begin(), vertex_for_generic.end(), cmp_degree);
+    // 记录新的id和旧的id的对应关系
+    unique_ptr<int[]> newid(new int[vertex_count]);
+    for (int i = 0; i < vertex_count; i++)
+    {
+        newid[vertex_for_generic[i].vertexID] = i;
+    }
+    for (int i = 0; i < vertex_count; i++)
+    {
+        for (auto &dst : vertex_for_generic[i].edge)
+            dst = newid[dst];
+        sort(vertex_for_generic[i].edge.begin(), vertex_for_generic[i].edge.end());
+    }
+    ofstream beginFile(genericGraphFile + "/begin.bin", ios::out | ios::binary);
+    ofstream adjFile(genericGraphFile + "/adjacent.bin", ios::out | ios::binary);
+    ofstream vertexFile(genericGraphFile + "/vertex.bin", ios::out | ios::binary);
+    ofstream maxDegreeFile(genericGraphFile + "/md.bin", ios::out | ios::binary);
+    if (!beginFile)
+    {
+        cout << "error" << endl;
+        // return 0;
+    }
+    if (!adjFile)
+    {
+        cout << "error" << endl;
+        // return 0;
+    }
+    if (!vertexFile)
+    {
+        cout << "error" << endl;
+        // return 0;
+    }
+    if (!maxDegreeFile)
+    {
+        cout << "error" << endl;
+        // return 0;
+    }
+    int sum = 0;
+    int maxDegree = vertex_for_generic[0].degree;
+    for (int i = 0; i < vertex_count; i++)
+    {
+        int vertex = vertex_for_generic[i].newid;
+        beginFile.write((char *)&sum, sizeof(int));
+        sum += vertex_for_generic[i].degree;
+        for (int j = 0; j < vertex_for_generic[i].degree; j++)
+            vertexFile.write((char *)&i, sizeof(int));
+        adjFile.write((char *)&vertex_for_generic[i].edge[0], sizeof(int) * vertex_for_generic[i].degree);
+    }
+    beginFile.write((char *)&sum, sizeof(int));
+    maxDegreeFile.write((char *)&maxDegree, sizeof(int));
+    beginFile.close();
+    adjFile.close();
+    vertexFile.close();
+    maxDegreeFile.close();
 }
 
 void orientation()
@@ -195,6 +316,7 @@ void reassignID()
     //     cout<<endl;
     // }
 }
+
 void computeCSR(int k)
 {
     int *a = new int[vertex_count];
@@ -211,20 +333,10 @@ void computeCSR(int k)
         vertex[i].vertexID = i;
     }
     reassignID();
-    size_t found = Infilename.find(".tsv");
-    // 如果找到子字符串
-    if (found != std::string::npos)
-    {
-        Infilename.erase(found, 4);
-    }
-    else
-    {
-        Infilename.erase(Infilename.size() - 5);
-    }
-    ofstream beginFile("/data/zh_dataset/dataforclique/" + Infilename + "/begin.bin", ios::out | ios::binary);
-    ofstream adjFile("/data/zh_dataset/dataforclique/" + Infilename + "/adjacent.bin", ios::out | ios::binary);
-    ofstream edgeFile("/data/zh_dataset/dataforclique/" + Infilename + "/edge", ios::out | ios::binary);
-    ofstream vertexFile("/data/zh_dataset/dataforclique/" + Infilename + "/vertex", ios::out | ios::binary);
+    ofstream beginFile(cliqueGraphFile + "/begin.bin", ios::out | ios::binary);
+    ofstream adjFile(cliqueGraphFile + "/adjacent.bin", ios::out | ios::binary);
+    ofstream vertexFile(cliqueGraphFile + "/vertex.bin", ios::out | ios::binary);
+    ofstream maxDegreeFile(cliqueGraphFile + "/md.bin", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -235,18 +347,18 @@ void computeCSR(int k)
         cout << "error" << endl;
         // return 0;
     }
-    if (!edgeFile)
-    {
-        cout << "error" << endl;
-        // return 0;
-    }
     if (!vertexFile)
     {
         cout << "error" << endl;
         // return 0;
     }
-
+    if (!maxDegreeFile)
+    {
+        cout << "error" << endl;
+        // return 0;
+    }
     int sum = 0;
+    int maxDegree = vertex[0].edge.size();
     for (int i = 0; i < vertex_count; i++)
     {
         beginFile.write((char *)&sum, sizeof(int));
@@ -254,22 +366,31 @@ void computeCSR(int k)
         sort(vertex[i].edge.begin(), vertex[i].edge.end(), cmp3);
         vector<int>::iterator upp = upper_bound(vertex[i].edge.begin(), vertex[i].edge.end(), k);
         int divide = upp - vertex[i].edge.begin();
-        // cout << divide << ' ' << vertex[i].edge.size() << endl;
-        int size = vertex[i].edge.size();
-        edgeFile.write((char *)&size, sizeof(int));
         for (int j = 0; j < vertex[i].edge.size(); j++)
             vertexFile.write((char *)&i, sizeof(int));
         adjFile.write((char *)&vertex[i].edge[0], sizeof(int) * vertex[i].edge.size());
     }
     beginFile.write((char *)&sum, sizeof(int));
+    maxDegreeFile.write((char *)&maxDegree, sizeof(int));
+    beginFile.close();
+    adjFile.close();
+    vertexFile.close();
+    maxDegreeFile.close();
 }
+// processed_data
 int main(int argc, char *argv[])
 {
+    inFileName = "cit-Patents_adj.mmio";
+    dirName = removeSuffix(inFileName);
+    genericGraphFile = genericGraphFile + dirName + "/";
+    cliqueGraphFile = cliqueGraphFile + dirName + "/";
     if (argc > 1)
     {
-        Infilename = argv[1];
+        inFileName = argv[1];
     }
     loadgraph();
+    removeDuplicatedEdgeAndSelfLoop();
+    saveUndirectedGraph();
     sort(vertex.begin(), vertex.end(), cmp1);
     orientation();
     sort(vertex.begin(), vertex.end(), cmp2);
