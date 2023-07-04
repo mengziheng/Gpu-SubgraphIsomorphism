@@ -58,7 +58,7 @@ int binary_search(int value)
 
 void loadgraph()
 {
-    ifstream inFile("/data/zh_dataset/graph/" + inFileName, ios::in);
+    ifstream inFile("/data/zh_dataset/graph_challenge_bigdata/" + inFileName, ios::in);
     if (!inFile)
     {
         cout << "error" << endl;
@@ -165,10 +165,11 @@ void saveUndirectedGraph()
             dst = newid[dst];
         sort(vertex_for_generic[i].edge.begin(), vertex_for_generic[i].edge.end());
     }
-    ofstream beginFile(genericGraphFile + "/begin.bin", ios::out | ios::binary);
-    ofstream adjFile(genericGraphFile + "/adjacent.bin", ios::out | ios::binary);
-    ofstream vertexFile(genericGraphFile + "/vertex.bin", ios::out | ios::binary);
-    ofstream maxDegreeFile(genericGraphFile + "/md.bin", ios::out | ios::binary);
+    ofstream beginFile(genericGraphFile + "begin.bin", ios::out | ios::binary);
+    ofstream adjFile(genericGraphFile + "adjacent.bin", ios::out | ios::binary);
+    ofstream vertexFile(genericGraphFile + "vertex.bin", ios::out | ios::binary);
+    ofstream maxDegreeFile(genericGraphFile + "md.bin", ios::out | ios::binary);
+    // cout << genericGraphFile << "begin.bin" << endl;
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -333,10 +334,10 @@ void computeCSR(int k)
         vertex[i].vertexID = i;
     }
     reassignID();
-    ofstream beginFile(cliqueGraphFile + "/begin.bin", ios::out | ios::binary);
-    ofstream adjFile(cliqueGraphFile + "/adjacent.bin", ios::out | ios::binary);
-    ofstream vertexFile(cliqueGraphFile + "/vertex.bin", ios::out | ios::binary);
-    ofstream maxDegreeFile(cliqueGraphFile + "/md.bin", ios::out | ios::binary);
+    ofstream beginFile(cliqueGraphFile + "begin.bin", ios::out | ios::binary);
+    ofstream adjFile(cliqueGraphFile + "adjacent.bin", ios::out | ios::binary);
+    ofstream vertexFile(cliqueGraphFile + "vertex.bin", ios::out | ios::binary);
+    ofstream maxDegreeFile(cliqueGraphFile + "md.bin", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -380,14 +381,14 @@ void computeCSR(int k)
 // processed_data
 int main(int argc, char *argv[])
 {
-    inFileName = "cit-Patents_adj.mmio";
-    dirName = removeSuffix(inFileName);
-    genericGraphFile = genericGraphFile + dirName + "/";
-    cliqueGraphFile = cliqueGraphFile + dirName + "/";
+    inFileName = "ca-CondMat_adj.mmio";
     if (argc > 1)
     {
         inFileName = argv[1];
     }
+    dirName = removeSuffix(inFileName);
+    genericGraphFile = genericGraphFile + dirName + "/";
+    cliqueGraphFile = cliqueGraphFile + dirName + "/";
     loadgraph();
     removeDuplicatedEdgeAndSelfLoop();
     saveUndirectedGraph();

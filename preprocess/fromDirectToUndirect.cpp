@@ -8,6 +8,7 @@
 
 using namespace std;
 typedef long long index_t;
+string prefix_path = "/data/zh_dataset/graph_challenge_bigdata/";
 
 typedef struct edge
 {
@@ -28,7 +29,7 @@ bool cmp(int a, int b)
 }
 void loadgraph(string filename)
 {
-    ifstream inFile("/data/zh_dataset/graph/" + filename, ios::in);
+    ifstream inFile(prefix_path + filename, ios::in);
     if (!inFile)
     {
         cout << "error" << endl;
@@ -38,6 +39,25 @@ void loadgraph(string filename)
     int p = 0;
     string line;
     stringstream ss;
+    while (getline(inFile, line))
+    {
+        if (line[0] < '0' || line[0] > '9')
+            continue;
+        ss.str("");
+        ss.clear();
+        ss << line;
+        if (p == 0)
+        {
+            edge e;
+            ss >> e.u >> e.v >> x;
+            if (e.u == 1 || e.v == 1)
+            {
+                edgelist.push_back(e);
+                maxvertex = max(maxvertex, max(e.u, e.v));
+            }
+            break;
+        }
+    }
     while (getline(inFile, line))
     {
         if (line[0] < '0' || line[0] > '9')
@@ -111,7 +131,7 @@ void deleteedge()
 }
 void writeback(string filename)
 {
-    ofstream outFile("/data/zh_dataset/graph/" + filename, ios::out);
+    ofstream outFile(prefix_path + filename, ios::out);
     if (!outFile)
     {
         cout << "error" << endl;
