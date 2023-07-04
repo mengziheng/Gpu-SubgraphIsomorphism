@@ -56,9 +56,63 @@ int binary_search(int value)
     return l;
 }
 
+void deletevertex()
+{
+    // 删除degree > 2的点
+    int new_vertex_count = 0;
+    int *a = new int[vertex_count];
+    for (int i = 0; i < vertex.size(); i++)
+    {
+        if (vertex[i].edge.size() < 2)
+        {
+            a[i] = -1;
+            continue;
+        }
+        a[i] = new_vertex_count;
+        new_vertex_count++;
+    }
+    vertex_count = new_vertex_count;
+    // 删除vertex
+    int new_edge_count = 0;
+    for (auto it = vertex.begin(); it != vertex.end();)
+    {
+        // 根据给定的条件判断是否删除元素
+        if (a[(*it).vertexID] == -1)
+        {
+            it = vertex.erase(it); // 删除当前元素，并返回下一个元素的迭代器
+        }
+        else
+        {
+            // 修改节点ID
+            (*it).vertexID = a[(*it).vertexID];
+            for (auto edge = (*it).edge.begin(); edge != (*it).edge.end();)
+            {
+                if (a[(*edge)] == -1)
+                {
+                    edge = (*it).edge.erase(edge); // 删除当前元素，并返回下一个元素的迭代器
+                }
+                else
+                {
+                    *edge = a[*edge];
+                    ++edge;
+                    new_edge_count++;
+                }
+            }
+            ++it; // 继续下一个元素
+        }
+    }
+    edge_count = new_edge_count;
+    for (int i = 0; i < vertex_count; i++)
+    {
+        vertex[i].degree = vertex[i].edge.size();
+        if (vertex[i].degree < 0)
+            printf("1");
+    }
+}
+
 void loadgraph()
 {
-    ifstream inFile("/data/zh_dataset/graph_challenge_bigdata/" + inFileName, ios::in);
+    ifstream inFile("/data/zh_dataset/graph_challenge_otherdata/" + inFileName, ios::in);
     if (!inFile)
     {
         cout << "error" << endl;
@@ -394,6 +448,7 @@ int main(int argc, char *argv[])
     saveUndirectedGraph();
     sort(vertex.begin(), vertex.end(), cmp1);
     orientation();
+    deletevertex();
     sort(vertex.begin(), vertex.end(), cmp2);
     int k = binary_search(32);
     computeCSR(k);

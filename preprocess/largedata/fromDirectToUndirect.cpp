@@ -8,7 +8,7 @@
 
 using namespace std;
 typedef long long index_t;
-string prefix_path = "/data/zh_dataset/graph_challenge_bigdata/";
+string prefix_path = "/data/zh_dataset/graph_challenge_otherdata/";
 
 typedef struct edge
 {

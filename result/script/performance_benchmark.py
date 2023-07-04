@@ -5,7 +5,7 @@ import subprocess
 import re
 import csv
 
-folder_path = "/data/zh_dataset/graph_challenge_smalldata"
+folder_path = "/data/zh_dataset/graph_challenge_snapdata"
 output_file = "../results.csv"  # 输出的CSV文件名
 
 # 获取文件夹中的所有文件

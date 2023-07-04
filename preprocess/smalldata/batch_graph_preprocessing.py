@@ -1,7 +1,7 @@
 import os
 
 # 需手动写入图的路径
-folder_path = "/data/zh_dataset/graph_challenge_bigdata/"
+folder_path = "/data/zh_dataset/graph_challenge_snapdata/"
 
 
 command = "g++ sort.cpp -o sort"
@@ -11,7 +11,8 @@ os.system(command)
 
 i = 0
 
-file_names = os.listdir(folder_path)
+# file_names = os.listdir(folder_path)
+file_names = ["Q6.mmio"]
 for file_name in file_names:
     graph_path = os.path.join(folder_path, file_name)
     graph_name = os.path.splitext(file_name)[0]
