@@ -8,7 +8,6 @@
 
 using namespace std;
 typedef long long index_t;
-string prefix_path = "/data/zh_dataset/graph_challenge_snapdata/";
 
 typedef struct edge
 {
@@ -29,7 +28,7 @@ bool cmp(int a, int b)
 }
 void loadgraph(string filename)
 {
-    ifstream inFile(prefix_path + filename, ios::in);
+    ifstream inFile(filename, ios::in);
     if (!inFile)
     {
         cout << "error" << endl;
@@ -132,7 +131,7 @@ void deleteedge()
 
 void writeback(string filename)
 {
-    ofstream outFile(prefix_path + filename, ios::out);
+    ofstream outFile(filename, ios::out);
     if (!outFile)
     {
         cout << "error" << endl;

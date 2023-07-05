@@ -62,6 +62,7 @@
         "typeinfo": "cpp",
         "__config": "cpp",
         "bitset": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "unordered_set": "cpp"
     }
 }
