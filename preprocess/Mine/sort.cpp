@@ -11,8 +11,7 @@ using namespace std;
 
 string inFileName;
 string ouFileName;
-string genericGraphFile;
-string cliqueGraphFile;
+string GraphFile;
 
 int vertex_count, edge_count;
 typedef struct edge_list
@@ -141,12 +140,11 @@ void saveUndirectedGraph()
         }
         vertex_for_generic[i].vertexID = i;
     }
-    ofstream beginFile(genericGraphFile + "begin.bin", ios::out | ios::binary);
-    ofstream adjFile(genericGraphFile + "adjacent.bin", ios::out | ios::binary);
-    ofstream vertexFile(genericGraphFile + "vertex.bin", ios::out | ios::binary);
-    ofstream maxDegreeFile(genericGraphFile + "md.bin", ios::out | ios::binary);
-    cout << genericGraphFile + "begin.bin" << endl;
-    // cout << genericGraphFile << "begin.bin" << endl;
+    ofstream beginFile(GraphFile + "generic_begin.bin", ios::out | ios::binary);
+    ofstream adjFile(GraphFile + "generic_adjacent.bin", ios::out | ios::binary);
+    ofstream vertexFile(GraphFile + "generic_vertex.bin", ios::out | ios::binary);
+    ofstream maxDegreeFile(GraphFile + "generic_md.bin", ios::out | ios::binary);
+    // cout << GraphFile << "begin.bin" << endl;
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -230,10 +228,10 @@ void computeCSR()
         }
         vertex[i].vertexID = i;
     }
-    ofstream beginFile(cliqueGraphFile + "begin.bin", ios::out | ios::binary);
-    ofstream adjFile(cliqueGraphFile + "adjacent.bin", ios::out | ios::binary);
-    ofstream vertexFile(cliqueGraphFile + "vertex.bin", ios::out | ios::binary);
-    ofstream maxDegreeFile(cliqueGraphFile + "md.bin", ios::out | ios::binary);
+    ofstream beginFile(GraphFile + "begin.bin", ios::out | ios::binary);
+    ofstream adjFile(GraphFile + "adjacent.bin", ios::out | ios::binary);
+    ofstream vertexFile(GraphFile + "vertex.bin", ios::out | ios::binary);
+    ofstream maxDegreeFile(GraphFile + "md.bin", ios::out | ios::binary);
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -282,17 +280,11 @@ int main(int argc, char *argv[])
         ouFileName = argv[2];
     }
     string dirName = removeSuffix(inFileName);
-    cout << dirName << endl;
-    genericGraphFile = ouFileName + "/generic_graph_preprocessed/" + dirName + "/";
-    cout << genericGraphFile << endl;
-    cliqueGraphFile = ouFileName + "/clique_graph_preprocessed/" + dirName + "/";
-    cout << cliqueGraphFile << endl;
+    GraphFile = ouFileName + "/" + dirName + "/";
     loadgraph();
     removeDuplicatedEdgeAndSelfLoop();
     sort(vertex.begin(), vertex.end(), cmp_degree);
-    printf("111\n");
     orientation();
-    printf("111\n");
     saveUndirectedGraph();
     sort(vertex.begin(), vertex.end(), cmp_degree);
     computeCSR();

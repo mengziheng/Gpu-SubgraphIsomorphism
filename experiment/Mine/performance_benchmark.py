@@ -9,7 +9,7 @@ import sys
 folder_path = sys.argv[1]
 output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/Mine"
 output_file = os.path.join(output_path, folder_path.split('/')[-1])
-
+print(output_file)
 # 获取文件夹中的所有文件
 file_names = os.listdir(folder_path)
 # file_names = ["flickrEdges_adj.mmio"]
@@ -26,8 +26,9 @@ for file_name in file_names:
 
     print(file_name + " order : " + str(i))
     dir_name = os.path.join(folder_path, file_name)
+    print(dir_name)
     # 构造命令
-    command = f"mpirun -n 1 ./trianglecounting.bin {dir_name}/ 1 1024 1024 1"
+    command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name}/ 1 0.25 8 216 1024 10"
     print(command)
     # 使用正则表达式提取图的名称、时间和个数
     regex_pattern = r"graph : ([\w\-\/]+) time is : (\d+\.\d+) ms,count is : (\d+)"

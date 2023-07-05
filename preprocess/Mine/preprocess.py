@@ -16,6 +16,7 @@ i = 0
 
 file_names = os.listdir(input_path)
 for file_name in file_names:
+    print(file_name)
     graph_path = os.path.join(input_path, file_name)
     graph_name = os.path.splitext(file_name)[0]
     last_dot_index = graph_name.rfind(".")
@@ -27,14 +28,13 @@ for file_name in file_names:
     if adj_index != -1:
         graph_name = graph_name[:adj_index]
     
-    clique_input_path = os.path.join(output_path, "clique_graph_preprocessed", graph_name)
-    dataforgeneral_input_path = os.path.join(output_path, "generic_graph_preprocessed", graph_name)
-    os.makedirs(clique_input_path, exist_ok=True)
-    os.makedirs(dataforgeneral_input_path, exist_ok=True)
+    file_path = os.path.join(output_path, graph_name)
+    os.makedirs(file_path, exist_ok=True)
     command = f"./fromDirectToUndirect {graph_path} {graph_path}"
+    print(graph_path)
     os.system(command)
     command = f"./sort {graph_path} {output_path}"
     os.system(command)
     i = i + 1
-    if(i == 1):
-        break
+    # if(i == 3):
+    #     break
