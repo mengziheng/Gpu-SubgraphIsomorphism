@@ -27,14 +27,10 @@ for file_name in file_names:
         print("processing : " + file_name)
         command = f'sudo chmod 777 {file_path}'
         os.system(command)
-        command = f'./fromDirectToUndirect {file_path}'
         if not os.path.exists(output_file_path):
-                os.system(command)
                 command = f'mkdir {output_file_path}'
-        os.system(command)
-        command = f'./sort 1.mmio {output_file_path}'
-        os.system(command)
-        command = f'rm 1.mmio'
+                os.system(command)
+        command = f'./sort {file_path} {output_file_path}'
         os.system(command)
 
                 

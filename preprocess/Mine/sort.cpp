@@ -13,19 +13,20 @@ string inFileName;
 string ouFileName;
 string GraphFile;
 
-int vertex_count, edge_count;
-typedef struct edge_list
+int vertex_count, edge_count, old_vertex_count;
+typedef struct
 {
     int vertexID;
     vector<int> edge;
     int degree;
-};
+} edge_list;
+
 vector<edge_list> vertex;
 vector<edge_list> vertexb;
 vector<edge_list> vertex_for_generic;
 bool cmp_degree(edge_list a, edge_list b)
 {
-    return (a.edge.size() > b.edge.size()) || (a.edge.size() == b.edge.size() && a.vertexID < b.vertexID);
+    return (a.degree > b.degree) || (a.degree == b.degree && a.vertexID < b.vertexID);
 }
 
 void loadgraph()
@@ -121,13 +122,14 @@ void removeDuplicatedEdgeAndSelfLoop()
             }
         }
         vertex[i].edge.swap(a);
+        vertex[i].degree = vertex[i].edge.size();
     }
 }
 
 // for undirected graph , degree bigger , id smaller
 void saveUndirectedGraph()
 {
-    int *a = new int[vertex_count];
+    int *a = new int[old_vertex_count];
     for (int i = 0; i < vertex_count; i++)
     {
         a[vertex_for_generic[i].vertexID] = i;
@@ -144,7 +146,7 @@ void saveUndirectedGraph()
     ofstream adjFile(GraphFile + "generic_adjacent.bin", ios::out | ios::binary);
     ofstream vertexFile(GraphFile + "generic_vertex.bin", ios::out | ios::binary);
     ofstream maxDegreeFile(GraphFile + "generic_md.bin", ios::out | ios::binary);
-    // cout << GraphFile << "begin.bin" << endl;
+    cout << GraphFile << "begin.bin" << endl;
     if (!beginFile)
     {
         cout << "error" << endl;
@@ -186,16 +188,21 @@ void saveUndirectedGraph()
 void orientation()
 {
     vertex_for_generic = vertex;
-    int index = -1;
+    int index = vertex_count;
     int *a = new int[vertex_count];
+    int flag = 1;
     for (int i = 0; i < vertex_count; i++)
     {
         a[vertex[i].vertexID] = i;
-        if (vertex[i].edge.size() == 1)
+        if (vertex[i].edge.size() < 2 && flag == 1)
+        {
+            flag = 0;
             index = i;
+        }
     }
+    old_vertex_count = vertex_count;
     vertex_count = index;
-
+    vertex.resize(vertex_count);
     for (int i = 0; i < vertex_count; i++)
     {
         vector<int> x(vertex[i].edge);
@@ -210,12 +217,14 @@ void orientation()
             if (a[v] < index)
                 vertex_for_generic[i].edge.push_back(v);
         }
+        vertex[i].degree = vertex[i].edge.size();
+        vertex_for_generic[i].degree = vertex_for_generic[i].edge.size();
     }
 }
 
 void computeCSR()
 {
-    int *a = new int[vertex_count];
+    int *a = new int[old_vertex_count];
     for (int i = 0; i < vertex_count; i++)
     {
         a[vertex[i].vertexID] = i;
@@ -273,7 +282,8 @@ void computeCSR()
 // processed_data
 int main(int argc, char *argv[])
 {
-    inFileName = "ca-CondMat_adj.mmio";
+    inFileName = "/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010519_adj.mmio";
+    ouFileName = "/data/zh_dataset/processed_graph_challenge_dataset/snap";
     if (argc > 1)
     {
         inFileName = argv[1];

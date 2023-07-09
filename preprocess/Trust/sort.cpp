@@ -51,7 +51,7 @@ int binary_search(int value)
 
 void loadgraph()
 {
-    ifstream inFile("1.mmio", ios::in);
+    ifstream inFile(Infilename, ios::in);
     if (!inFile)
     {
         cout << "error" << endl;

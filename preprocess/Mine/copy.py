@@ -3,20 +3,19 @@ import sys
 
 # input_path = sys.argv[1]
 # output_path = sys.argv[2] 
-input_path = "/data/zh_dataset/graph_challenge_dataset/snap"
-output_path = "/data/zh_dataset/processed_graph_challenge_dataset/snap"
+input_path = "/data/zh_dataset/graph_challenge_dataset/Synthetic"
+output_path = "/data/zh_dataset/processed_graph_challenge_dataset/Synthetic"
 
 
-# command = "g++ sort.cpp -o sort"
-# os.system(command)
-# command = "g++ fromDirectToUndirect.cpp -o fromDirectToUndirect"
-# os.system(command)
+command = "g++ sort.cpp -o sort"
+os.system(command)
+command = "g++ fromDirectToUndirect.cpp -o fromDirectToUndirect"
+os.system(command)
 
 i = 0
 
 file_names = os.listdir(input_path)
 for file_name in file_names:
-    # if(file_name == "oregon1_010407_adj.mmio"):
         print(file_name)
         graph_path = os.path.join(input_path, file_name)
         graph_name = os.path.splitext(file_name)[0]
@@ -38,8 +37,7 @@ for file_name in file_names:
         print(graph_path)
         os.system(command)
         command = f"./sort {graph_path} {output_path}"
-        print(command)
         os.system(command)
         i = i + 1
-        # if(i == 7):
+        # if(i == 3):
         #     break

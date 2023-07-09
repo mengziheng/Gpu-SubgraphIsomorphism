@@ -1,14 +1,14 @@
 import os
 import subprocess
 import re
-import csv
+import pandas as pd
 import sys
 
-# folder_path = "/data/zh_dataset/TRUST_processed_graph_challenge_dataset/snap"
+folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/Synthetic"
 
-folder_path = sys.argv[1]
+# folder_path = sys.argv[1]
 output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/Mine"
-output_file = os.path.join(output_path, folder_path.split('/')[-1])
+output_file = os.path.join(output_path, folder_path.split('/')[-1] + ".xlsx")
 print(output_file)
 # 获取文件夹中的所有文件
 file_names = os.listdir(folder_path)
@@ -17,7 +17,7 @@ file_names = os.listdir(folder_path)
 # 创建空的结果列表
 results = []
 
-command = f"mv ../../final_version/subgraphmatch.bin ./"
+command = f"cp ../../final_version/subgraphmatch.bin ./"
 os.system(command)
 
 i = 0
@@ -28,10 +28,10 @@ for file_name in file_names:
     dir_name = os.path.join(folder_path, file_name)
     print(dir_name)
     # 构造命令
-    command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name}/ 1 0.25 8 216 1024 10"
+    command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name} triangle 1 0.05 4 216 1024 10"
     print(command)
     # 使用正则表达式提取图的名称、时间和个数
-    regex_pattern = r"graph : ([\w\-\/]+) time is : (\d+\.\d+) ms,count is : (\d+)"
+    regex_pattern = r"graph : ([\w\-\/\.]+) time is : (\d+\.\d+) ms,count is : (\d+)"
     # 执行C++文件并捕获输出
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 
@@ -49,14 +49,12 @@ for file_name in file_names:
             print([graph_name, time, count])
     i = i + 1
 
-# 将结果写入CSV文件
-with open(output_file, 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    
-    # 写入表头
-    writer.writerow(['File', 'Time', 'Triangle Count'])
-    
-    # 写入每行结果
-    writer.writerows(results)
+# 创建DataFrame对象
+df = pd.DataFrame(results, columns=["graph_name", "time", "count"])
 
-print("CSV文件已生成。")
+# 对"Filename"列进行升序排序
+df = df.sort_values(by="graph_name", ascending=True)
+
+df.to_excel(output_file, index=False)
+
+print("excel文件已生成。")
