@@ -24,4 +24,4 @@ else
     echo "未知的参数: $param"
 fi
 
-make && cp subgraphmatch.bin /home/zhmeng/GPU/Gpu-SubgraphIsomorphism/experiment/ChunkSize/
+make && cp subgraphmatch.bin /home/zhmeng/GPU/Gpu-SubgraphIsomorphism/experiment/ForGeneralExperiment/

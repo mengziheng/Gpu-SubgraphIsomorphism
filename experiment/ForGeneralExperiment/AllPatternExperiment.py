@@ -3,14 +3,15 @@ import subprocess
 import re
 import openpyxl
 
-pattern_list = ["Q1","Q2","Q3","Q6","Q7","Q8","Q11","Q12"]
+# pattern_list = ["Q6"]
+pattern_list = ["Q6","Q7","Q11","Q12"]
 workbook = openpyxl.Workbook()
 sheet = workbook.active
 
 folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/snap"
 # folder_path = sys.argv[1]
 
-output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/AllPattern"
+output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/AllPatern"
 output_file = os.path.join(output_path, folder_path.split('/')[-1] + ".xlsx")
 
 file_names = os.listdir(folder_path)
@@ -35,11 +36,9 @@ for i,pattern in enumerate(pattern_list):
     #     break
 
     for j,file_name in enumerate(file_names):
-        if(not (file_name == "friendster" or file_name == "flickrEdges")):
-            continue
         print(file_name + " order : " + str(i))
         dir_name = os.path.join(folder_path, file_name)
-        command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name} {pattern} 1 0.25 4 216 1024 10"
+        command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name} {pattern} 1 0.1 8 216 1024 10"
         regex_pattern = r"graph : ([\w\-\/\.]+) time is : (\d+\.\d+) ms,count is : (\d+)"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 

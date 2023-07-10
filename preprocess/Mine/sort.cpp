@@ -29,6 +29,10 @@ bool cmp_degree(edge_list a, edge_list b)
     return (a.degree > b.degree) || (a.degree == b.degree && a.vertexID < b.vertexID);
 }
 
+bool cmp_id(int a, int b)
+{
+    return (a < b);
+}
 void loadgraph()
 {
     ifstream inFile(inFileName, ios::in);
@@ -173,6 +177,7 @@ void saveUndirectedGraph()
     {
         beginFile.write((char *)&sum, sizeof(int));
         sum += vertex_for_generic[i].edge.size();
+        // sort(vertex_for_generic[i].edge.begin(), vertex_for_generic[i].edge.end(),cmp_id);
         for (int j = 0; j < vertex_for_generic[i].edge.size(); j++)
             vertexFile.write((char *)&i, sizeof(int));
         adjFile.write((char *)&vertex_for_generic[i].edge[0], sizeof(int) * vertex_for_generic[i].edge.size());
@@ -267,7 +272,7 @@ void computeCSR()
     {
         beginFile.write((char *)&sum, sizeof(int));
         sum += vertex[i].edge.size();
-        sort(vertex[i].edge.begin(), vertex[i].edge.end());
+        sort(vertex[i].edge.begin(), vertex[i].edge.end(),cmp_id);
         for (int j = 0; j < vertex[i].edge.size(); j++)
             vertexFile.write((char *)&i, sizeof(int));
         adjFile.write((char *)&vertex[i].edge[0], sizeof(int) * vertex[i].edge.size());
@@ -282,7 +287,7 @@ void computeCSR()
 // processed_data
 int main(int argc, char *argv[])
 {
-    inFileName = "/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010519_adj.mmio";
+    inFileName = "/data/zh_dataset/graph_challenge_dataset/snap/cit-HepTh_adj.mmio";
     ouFileName = "/data/zh_dataset/processed_graph_challenge_dataset/snap";
     if (argc > 1)
     {

@@ -20,6 +20,7 @@ for i in range(1, 9):
             value2 = float(df2.iloc[j, 2*i-1].split('ms')[0])
             ratio.append(value2 / value1)
     ratios.append(ratio)
+    print(ratio)
 # ratio = df1[column2] / df2[column1]
 
 # df = pd.DataFrame(ratios)

@@ -16,7 +16,7 @@ i = 0
 
 file_names = os.listdir(input_path)
 for file_name in file_names:
-    if(file_name == "clique_5.mmio"):
+    if(file_name == "soc-Slashdot0902_adj.mmio"):
         print(file_name)
         graph_path = os.path.join(input_path, file_name)
         graph_name = os.path.splitext(file_name)[0]
