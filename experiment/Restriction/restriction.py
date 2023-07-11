@@ -11,8 +11,7 @@ sheet = workbook.active
 folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/snap"
 # folder_path = sys.argv[1]
 
-output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/Restriction/withoutRestriction.xlsx"
-output_file = os.path.join(output_path, folder_path.split('/')[-1] + ".xlsx")
+output_file = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/Restriction/withoutRestriction.xlsx"
 
 file_names = os.listdir(folder_path)
 results = []
