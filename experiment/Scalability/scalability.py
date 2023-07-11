@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 file_list_path = "graph_dataset.txt"
 file_prefix = "/data/zh_dataset/processed_graph_challenge_dataset/snap/"
 
+pattern_list = ["Q6","Q7","Q11","Q12"]
 # 定义参数范围
-param_range = range(7)
+param_range = [1,2,4,8,16,32,64,128,256,512,1024]
 
 # 存储测试结果
 results = []
@@ -17,34 +18,35 @@ results = []
 with open(file_list_path, 'r') as file:
     file_names = file.read().splitlines()
 
-# 遍历每个数据集
-for file_name in file_names:
-    # 构建文件路径
-    file_path = os.path.join(file_prefix, file_name)
+for i,pattern in enumerate(pattern_list):
+    # 遍历每个数据集
+    for file_name in file_names:
+        # 构建文件路径
+        file_path = os.path.join(file_prefix, file_name)
+        # 存储当前数据集的测试结果
+        dataset_results = []
+        # 遍历每个参数
+        for param in param_range:
+            # 执行测试并获取结果时间
+            command = f"mpirun -n {param} ./subgraphmatch.bin {file_path} {pattern} {param} 0.05 4 216 1024 10"
+            regex_pattern = r"graph : ([\w\-\/]+) time is : (\d+\.\d+) ms,count is : (\d+)"
+            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+            # 逐行读取输出并提取信息
+            for line in iter(process.stdout.readline, b''):
+                line = line.decode().strip()
+                match = re.search(regex_pattern, line)
+                if match:
+                    result_time = match.group(2)
+                    count = match.group(3)
+                    results.append([file_name, result_time, count])
+                    print([file_name, result_time, count])
+            # 存储结果时间
+            dataset_results.append(result_time)
 
-    # 存储当前数据集的测试结果
-    dataset_results = []
+        # 存储当前数据集的结果
+        results.append(dataset_results)
 
-    # 遍历每个参数
-    for param in param_range:
-        # 执行测试并获取结果时间
-        command = f"mpirun -n {param} ./subgraphmatch.bin {file_path} triangle {param} 0.05 4 216 1024 10"
-        regex_pattern = r"graph : ([\w\-\/]+) time is : (\d+\.\d+) ms,count is : (\d+)"
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-        # 逐行读取输出并提取信息
-        for line in iter(process.stdout.readline, b''):
-            line = line.decode().strip()
-            match = re.search(regex_pattern, line)
-            if match:
-                result_time = match.group(2)
-                count = match.group(3)
-                results.append([file_name, result_time, count])
-                print([file_name, result_time, count])
-        # 存储结果时间
-        dataset_results.append(result_time)
 
-    # 存储当前数据集的结果
-    results.append(dataset_results)
 
 # 计算速度提升
 speedup = []
