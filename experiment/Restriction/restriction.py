@@ -3,12 +3,12 @@ import subprocess
 import re
 import openpyxl
 
-# pattern_list = ["Q6"]
-pattern_list = ["Q6","Q7","Q11","Q12"]
+pattern_list = ["Q6"]
+# pattern_list = ["Q0","Q1","Q2","Q3","Q6","Q7","Q11","Q12"]
 workbook = openpyxl.Workbook()
 sheet = workbook.active
 
-folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/snap"
+folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/Synthetic"
 # folder_path = sys.argv[1]
 
 output_file = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/Restriction/withoutRestriction.xlsx"
@@ -21,17 +21,19 @@ parameters = []
 # 标题行列
 sheet.cell(row=1, column=1, value="Graph/Pattern")  # 左上角单元格
 for i, pattern in enumerate(pattern_list):
-    sheet.cell(row=1, column=2*i + 2, value=pattern+" time")
-    sheet.cell(row=1, column=2*i + 3, value=pattern + " count")
+    sheet.cell(row=1, column= i + 2, value=pattern+" time")
 
-for i, filename in enumerate(file_names):
-    sheet.cell(row=i + 2, column=1, value=filename)
+    
 
 for i,pattern in enumerate(pattern_list):
     command = f"./run.sh {pattern}"
     os.system(command)
-
-    for j,file_name in enumerate(file_names):
+    j = -1
+    for file_name in file_names:
+        if(not file_name == "P1a"):
+            continue
+        j = j + 1
+        sheet.cell(row=j + 2, column=1, value=file_name)
         print(file_name + " order : " + str(i))
         dir_name = os.path.join(folder_path, file_name)
         command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name} {pattern} 1 0.1 8 216 1024 10"
@@ -49,7 +51,6 @@ for i,pattern in enumerate(pattern_list):
                 count = match.group(3)
                 results.append([graph_name, time, count])
                 print([graph_name, time, count])
-                sheet.cell(row=j+2, column=2*i+2, value=time)
-                sheet.cell(row=j+2, column=2*i+3, value=count)
+                sheet.cell(row=j+2, column=i+2, value=time)
 
 workbook.save(output_file)

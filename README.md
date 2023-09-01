@@ -23,6 +23,8 @@ Our framework is designed to provide a scalable solution for subgraph matching. 
 
 include preprocess script for H-index , Trust , OurCode
 
+OurCode is in preprocess/SMOG
+
 All preprocess script is preprocess.py
 
 preprocess graph : 
@@ -47,16 +49,14 @@ result get from experiment
 ## Compile and Run code
 For small graph, we don't partition the graph. 
 
-Compile the code:
-    `make`
-Run the code:
-    `./subgraphmatch.bin cit-Patents_adj triangle 0.25 8 216 1024 1`
+Run the srcipt direct
+    `python script.py --input_graph_folder /data/zh_dataset/processed_graph_challenge_dataset/snap/cit-Patents --input_pattern Q2`
 
-The input arguments is 
-1. input graph folder 
-2. input pattern
-3. load factor
-4. bucket size
-5. block number for kernel
-6. block size for kernel
-7. chunk size
+there are also other parameters you can choose to change：
+
+--N : numbers of GPU
+--load_factor : load factor for hash table
+--bucket_size : bucket size for hash table
+--block_number_for_kernel : number of block for subgraph match kernel
+--block_size_for_kernel : size of block for subgraph match kernel
+--chunk_size : chunk size for task assignment

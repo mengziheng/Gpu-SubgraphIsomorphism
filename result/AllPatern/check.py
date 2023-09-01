@@ -19,4 +19,4 @@ for i in range(1, 9):
             value1 = float(df1.iloc[j, 2*i])
             value2 = float(df2.iloc[j, 2*i])
             if(value1 != value2):
-                print(value1,value2,i,j,float(df1.iloc[j, 2*i-1]) / float(df2.iloc[j, 2*i-1]))
+                print(value1,value2,i,j)

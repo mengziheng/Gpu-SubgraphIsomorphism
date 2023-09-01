@@ -1,0 +1,162 @@
+/data/zh_dataset/graph_challenge_dataset/snap/amazon0302_adj.mmio:0
+elapsed_time= 2801.247835 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/amazon0312_adj.mmio:0
+elapsed_time= 9563.662052 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/amazon0505_adj.mmio:0
+elapsed_time= 10249.271870 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/amazon0601_adj.mmio:0
+elapsed_time= 10167.145967 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/as20000102_adj.mmio:0
+elapsed_time= 36.315203 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/as-caida20071105_adj.mmio:0
+elapsed_time= 61.996937 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/ca-AstroPh_adj.mmio:0
+elapsed_time= 34.674168 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/ca-CondMat_adj.mmio:0
+elapsed_time= 37.279129 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/ca-GrQc_adj.mmio:0
+elapsed_time= 5.489111 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/ca-HepPh_adj.mmio:0
+elapsed_time= 32.408953 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/ca-HepTh_adj.mmio:0
+elapsed_time= 10.644913 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/cit-HepPh_adj.mmio:0
+elapsed_time= 212.213039 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/cit-HepTh_adj.mmio:0
+elapsed_time= 102.834940 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/cit-Patents_adj.mmio:0
+elapsed_time=
+
+/data/zh_dataset/graph_challenge_dataset/snap/email-Enron_adj.mmio:0
+elapsed_time= 66.812038 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/email-EuAll_adj.mmio:0
+elapsed_time= 233.473063 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/facebook_combined_adj.mmio:0
+elapsed_time= 27.273178 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/flickrEdges_adj.mmio:0
+elapsed_time= 1932.719946 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/friendster_adj.mmio:0
+elapsed_time=
+
+/data/zh_dataset/graph_challenge_dataset/snap/loc-brightkite_edges_adj.mmio:0
+elapsed_time= 99.128008 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/loc-gowalla_edges_adj.mmio:0
+elapsed_time= 2087.103844 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010331_adj.mmio:0
+elapsed_time= 77.461004 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010407_adj.mmio:0
+elapsed_time= 79.243898 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010414_adj.mmio:0
+elapsed_time= 79.860926 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010421_adj.mmio:0
+elapsed_time= 82.059860 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010428_adj.mmio:0
+elapsed_time= 83.029985 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010505_adj.mmio:0
+elapsed_time= 82.617998 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010512_adj.mmio:0
+elapsed_time= 79.159021 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010519_adj.mmio:0
+elapsed_time= 82.499027 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon1_010526_adj.mmio:0
+elapsed_time= 83.663940 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010331_adj.mmio:0
+elapsed_time= 83.223820 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010407_adj.mmio:0
+elapsed_time= 85.511923 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010414_adj.mmio:0
+elapsed_time= 90.008020 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010421_adj.mmio:0
+elapsed_time= 88.093042 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010428_adj.mmio:0
+elapsed_time= 86.488008 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010505_adj.mmio:0
+elapsed_time= 88.726997 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010512_adj.mmio:0
+elapsed_time= 93.616009 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010519_adj.mmio:0
+elapsed_time= 89.715004 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/oregon2_010526_adj.mmio:0
+elapsed_time= 92.041969 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella04_adj.mmio:0
+elapsed_time= 12.114048 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella05_adj.mmio:0
+elapsed_time= 9.951830 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella06_adj.mmio:0
+elapsed_time= 9.582996 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella08_adj.mmio:0
+elapsed_time= 6.799936 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella09_adj.mmio:0
+elapsed_time= 10.333061 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella24_adj.mmio:0
+elapsed_time= 20.997047 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella25_adj.mmio:0
+elapsed_time= 17.807961 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella30_adj.mmio:0
+elapsed_time= 48.459053 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/p2p-Gnutella31_adj.mmio:0
+elapsed_time= 111.477137 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/roadNet-CA_adj.mmio:0
+elapsed_time= 55708.247900 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/roadNet-PA_adj.mmio:0
+elapsed_time= 17336.562872 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/roadNet-TX_adj.mmio:0
+elapsed_time= 26823.855877 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/soc-Epinions1_adj.mmio:0
+elapsed_time= 331.425905 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/soc-Slashdot0811_adj.mmio:0
+elapsed_time= 261.472940 ms
+
+/data/zh_dataset/graph_challenge_dataset/snap/soc-Slashdot0902_adj.mmio:0
+elapsed_time= 286.219835 ms
+

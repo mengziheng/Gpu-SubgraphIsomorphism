@@ -1,0 +1,174 @@
+/data/zh_dataset/graph_challenge_dataset/Synthetic/201512012345.v18571154_e38040320.mmio:0
+elapsed_time= 58753.077030 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/201512020000.v35991342_e74485420.mmio:0
+elapsed_time= 151281.384945 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/201512020030.v68863315_e143414960.mmio:0
+elapsed_time= 354289.144993 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/201512020130.v128568730_e270234840.mmio:0
+elapsed_time= 735044.342041 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/201512020330.v226196185_e480047894.mmio:0
+elapsed_time=
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale18-ef16_adj.mmio:0
+elapsed_time= 114594.949007 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale19-ef16_adj.mmio:0
+elapsed_time= 408176.947117 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale20-ef16_adj.mmio:0
+elapsed_time= 1669641.478062 ms
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale21-ef16_adj.mmio, pattern: 
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale22-ef16_adj.mmio:0
+elapsed_time= 1195894.745111 ms
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale23-ef16_adj.mmio, pattern: 
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale24-ef16_adj.mmio, pattern: 
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/graph500-scale25-ef16_adj.mmio, pattern: 
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/P1a.mmio, pattern: 
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-16-25-81-B1k.mmio:0
+elapsed_time= 576.189041 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-16-25-81-B2k.mmio:0
+elapsed_time= 34.090042 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-16-25-B1k.mmio:0
+elapsed_time= 0.473022 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-16-25-B2k.mmio:0
+elapsed_time= 0.545025 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-256-625-B1k.mmio:0
+elapsed_time= 132.946014 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-256-625-B2k.mmio:0
+elapsed_time= 12.279987 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-25-81-256-B1k.mmio:0
+elapsed_time= 1765.892982 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-25-81-256-B2k.mmio:0
+elapsed_time= 2261.832952 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-25-81-B1k.mmio:0
+elapsed_time= 1.518965 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-25-81-B2k.mmio:0
+elapsed_time= 1.223087 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-9-16-25-B1k.mmio:0
+elapsed_time= 74165.400982 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-9-16-25-B2k.mmio:0
+elapsed_time= 66878.741026 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-9-16-B1k.mmio:0
+elapsed_time= 5770.653009 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-9-16-B2k.mmio:0
+elapsed_time= 76.132059 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-9-B1k.mmio:0
+elapsed_time= 19.086838 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-9-B2k.mmio:0
+elapsed_time= 4.250050 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-B1k.mmio:0
+elapsed_time= 0.680208 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-5-B2k.mmio:0
+elapsed_time= 0.468016 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-B1k.mmio:0
+elapsed_time= 0.349998 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-3-4-B2k.mmio:0
+elapsed_time= 0.360966 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-9-16-25-B1k.mmio:0
+elapsed_time= 161023.544073 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-9-16-25-B2k.mmio:0
+elapsed_time= 2294.288874 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-9-16-B1k.mmio:0
+elapsed_time= 514.651060 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-9-16-B2k.mmio:0
+elapsed_time= 41.885138 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-9-B1k.mmio:0
+elapsed_time= 1.051903 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-9-B2k.mmio:0
+elapsed_time= 0.679016 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-B1k.mmio:0
+elapsed_time= 0.304937 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-4-5-B2k.mmio:0
+elapsed_time= 0.376940 ms
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-16-25-81-B1k.mmio, pattern: 
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-16-25-81-B2k.mmio:0
+elapsed_time= 485469.398022 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-16-25-B1k.mmio:0
+elapsed_time= 2391.710043 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-16-25-B2k.mmio:0
+elapsed_time= 69.557905 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-16-B1k.mmio:0
+elapsed_time= 4.431009 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-16-B2k.mmio:0
+elapsed_time= 2.928972 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-B1k.mmio:0
+elapsed_time= 0.380039 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-5-9-B2k.mmio:0
+elapsed_time= 0.339031 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-81-256-B1k.mmio:0
+elapsed_time= 72.332144 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-81-256-B2k.mmio:0
+elapsed_time= 36.115885 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-9-16-25-81-B1k.mmio:0
+elapsed_time= 71766.794205 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-9-16-25-81-B2k.mmio:0
+elapsed_time= 5153.336048 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-9-16-25-B1k.mmio:0
+elapsed_time= 51.936150 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-9-16-25-B2k.mmio:0
+elapsed_time= 17.337084 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-9-16-B1k.mmio:0
+elapsed_time= 0.452995 ms
+
+/data/zh_dataset/graph_challenge_dataset/Synthetic/Theory-9-16-B2k.mmio:0
+elapsed_time= 0.433922 ms
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/U1a.mmio, pattern: 
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/V1r.mmio, pattern: 
+
+Timeout occurred for file: /data/zh_dataset/graph_challenge_dataset/Synthetic/V2a.mmio, pattern: 
+
