@@ -55,8 +55,13 @@ Run the srcipt direct
 there are also other parameters you can choose to change：
 
 --N : numbers of GPU
+
 --load_factor : load factor for hash table
+
 --bucket_size : bucket size for hash table
+
 --block_number_for_kernel : number of block for subgraph match kernel
+
 --block_size_for_kernel : size of block for subgraph match kernel
+
 --chunk_size : chunk size for task assignment
