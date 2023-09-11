@@ -37,11 +37,13 @@ The input arguments is
 ### experiment 
 include experiment script for H-index , Trust , OurCode
 
-preprocess graph : 
+experiment for Trust and Hindex: 
     `python performance_benchmark.py /data/zh_dataset/Hindex_processed_graph_challenge_dataset/snap`
 
-The input arguments is 
-1. input graph folder (include all graph already preprocessed)
+experiment for SMOG:
+    `python scalability.py`
+
+The input arguments is the input graph folder (include all graph already preprocessed)
 
 ### result 
 result get from experiment
@@ -52,7 +54,7 @@ For small graph, we don't partition the graph.
 Run the srcipt direct
     `python script.py --input_graph_folder /data/zh_dataset/processed_graph_challenge_dataset/snap/cit-Patents --input_pattern Q2`
 
-there are also other parameters you can choose to change：
+input_graph_folder and input_pattern are required, and there are also other parameters you can choose to change：
 
 --N : numbers of GPU
 

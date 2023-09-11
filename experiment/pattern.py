@@ -1,23 +1,24 @@
+# experiment on different pattern
+
 import os
 import subprocess
 import re
 import openpyxl
+import pandas as pd
 
-# pattern_list = ["Q6"]
-pattern_list = ["Q1","Q2","Q3","Q6","Q7","Q11","Q12"]
-workbook = openpyxl.Workbook()
-sheet = workbook.active
-
-folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/Synthetic"
 # folder_path = sys.argv[1]
 
-output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/AllPatern"
+pattern_list = ["Q0","Q1","Q2","Q3","Q4","Q5","Q6"]
+folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/snap"
+output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/SMOG_patern"
 output_file = os.path.join(output_path, folder_path.split('/')[-1] + ".xlsx")
 
 file_names = os.listdir(folder_path)
 results = []
-
 parameters = []
+workbook = openpyxl.Workbook()
+sheet = workbook.active
+
 
 # 标题行列
 sheet.cell(row=1, column=1, value="Graph/Pattern")  # 左上角单元格
@@ -29,18 +30,12 @@ for i, filename in enumerate(file_names):
     sheet.cell(row=i + 2, column=1, value=filename)
 
 for i,pattern in enumerate(pattern_list):
-    command = f"./run.sh {pattern}"
-    os.system(command)
-
-    # if(i == 2):
-    #     break
-
     for j,file_name in enumerate(file_names):
-        if(file_name == "flickrEdges"):
+        if(file_name != "amazon0302"):
             continue
         print(file_name + " order : " + str(i))
         dir_name = os.path.join(folder_path, file_name)
-        command = f"mpirun -n 1 ./subgraphmatch.bin {dir_name} {pattern} 1 0.1 8 216 1024 1"
+        command = f"cd ../../final_version/ && python script.py --input_graph_folder {dir_name} --input_pattern {pattern}"
         regex_pattern = r"graph : ([\w\-\/\.]+) time is : (\d+\.\d+) ms,count is : (\d+)"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 
@@ -59,3 +54,10 @@ for i,pattern in enumerate(pattern_list):
                 sheet.cell(row=j+2, column=2*i+3, value=count)
 
 workbook.save(output_file)
+# 读取上一步保存的Excel文件
+df = pd.read_excel(output_file, sheet_name="Sheet")
+df_value = df.sort_values(by=["Graph/Pattern"], ascending=True)
+# 保存文件
+writer = pd.ExcelWriter(output_file)
+df_value.to_excel(writer, sheet_name='Sheet', index=False)
+writer.close()

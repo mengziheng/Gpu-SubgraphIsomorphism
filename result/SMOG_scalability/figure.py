@@ -53,4 +53,4 @@ def plot_scala(Infile, OutFile):
 # plot_scala(path + "cit-Patents.xlsx", path + "scalability_cit-Patents.pdf")
 # plot_scala(path + "roadNet-PA.xlsx", path + "scalability_roadNet-PA.pdf")
 # plot_scala(path + "P1a.xlsx", path + "P1a.pdf")
-plot_scala(path + "201512020000.xlsx", path + "201512020000.pdf")
+plot_scala(path + "xlsx/201512020000.xlsx", path + "pdf/201512020000.pdf")

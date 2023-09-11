@@ -18,7 +18,7 @@ rcParams["font.family"] = "serif"
 rcParams["font.serif"] = ["Times New Roman"] + rcParams["font.serif"]
 rcParams["font.size"] = 17
 rcParams["figure.figsize"] = (4, 3)
-excel_file = 'AllPatern.xlsx'
+excel_file = 'allpatern.xlsx'
 df1 = pd.read_excel(excel_file, sheet_name='SMOG')
 df2 = pd.read_excel(excel_file, sheet_name='rps')
 
