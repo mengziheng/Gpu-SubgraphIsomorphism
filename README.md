@@ -46,7 +46,7 @@ experiment for SMOG:
 The input arguments is the input graph folder (include all graph already preprocessed)
 
 ### result 
-result get from experiment
+results geted from experiment
 
 ## Compile and Run code
 For small graph, we don't partition the graph. 
