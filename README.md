@@ -45,15 +45,12 @@ experiment for Trust and Hindex:
     `python performance_benchmark.py /data/zh_dataset/Hindex_processed_graph_challenge_dataset/snap`
 
 experiment for SMOG:
-    `python scalability.py`
+    Just execute 'python' + 'script_file_name.py' command
 
 The input arguments is the input graph folder (include all graph already preprocessed)
 
 ### result 
-results geted from experiment
-
-### initial_version
-The first version of the code, only used to test the effectiveness of our subsequent optimizations
+results obtained from experiments
 
 ### final_version
 The version of the paper as it is submitted, which readers can use for testing
