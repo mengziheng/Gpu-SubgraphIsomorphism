@@ -79,6 +79,7 @@ input_graph_folder and input_pattern are required, and there are also other para
 Please send me a email if you have any questions: zhmeng.cn@gmail.com
 
 ### Results
+
 | Graph/Pattern        | Q1 count    | Q2 count    | Q3 count  | Q4 count    | Q5 count   | Q6 count    | Q7 count  | Q8 count   |
 |----------------------|-------------|-------------|-----------|-------------|------------|-------------|------------|-------------|
 | amazon0302           | 2477087     | 3110467     | 304441    | 4915256     | 67942      | 6405886     | 6267       | 2891271     |
