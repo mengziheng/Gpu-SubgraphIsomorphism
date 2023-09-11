@@ -52,6 +52,12 @@ The input arguments is the input graph folder (include all graph already preproc
 ### result 
 results geted from experiment
 
+### initial_version
+The first version of the code, only used to test the effectiveness of our subsequent optimizations
+
+### final_version
+The version of the paper as it is submitted, which readers can use for testing
+
 ## Compile and Run code
 For small graph, we don't partition the graph. 
 
