@@ -25,9 +25,9 @@ Our framework is designed to provide a scalable solution for subgraph matching. 
 
 ### preprocess 
 
-include preprocess script for H-index , Trust , OurCode
+include preprocess script for H-index , Trust , SMOG
 
-OurCode is in preprocess/SMOG
+SMOG is in preprocess/SMOG
 
 All preprocess script is preprocess.py
 
@@ -39,7 +39,7 @@ The input arguments is
 2. output graph folder (include all graph already preprocessed)
 
 ### experiment 
-include experiment script for H-index , Trust , OurCode
+include experiment script for H-index , Trust , SMOG
 
 experiment for Trust and Hindex: 
     `python performance_benchmark.py /data/zh_dataset/Hindex_processed_graph_challenge_dataset/snap`
