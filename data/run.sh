@@ -1,5 +1,3 @@
-mkdir data
-cd data
 mkdir graph
 mkdir processed_graph
 mkdir result
