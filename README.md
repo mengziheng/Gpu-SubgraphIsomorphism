@@ -54,9 +54,13 @@ Include experiment script for H-index , Trust , SMOG
 Experiment for Trust and Hindex: 
     `python performance_benchmark.py /data/zh_dataset/Hindex_processed_graph_challenge_dataset/snap`
 
-If you want to test the results of all graphs and all patterns on SMOG, you can execute 'python pattern.py', You can change the contents of pattern.py to modify the graph and pattern to be tested and the path to the output file
+If you want to test the results of all graphs and all patterns on SMOG, you can execute 
+    'python pattern.py'
+You can change the contents of pattern.py to modify the graph and pattern to be tested and the path to the output file
 
-If you want to test the results on a different number of GPUs, you can execute 'python scalability.py' in scalability folder, You can change the contents of scalability.py to modify the graph and pattern and numbers of GPU to be tested and the path to the output file
+If you want to test the results on a different number of GPUs, you can execute 
+    'python scalability.py' 
+in scalability folder, You can change the contents of scalability.py to modify the graph and pattern and numbers of GPU to be tested and the path to the output file
 
 ## Contact
 Please send me a email if you have any questions: zhmeng.cn@gmail.com or wzbwangzhibin@gmail.com
