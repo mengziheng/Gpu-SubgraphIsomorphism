@@ -49,15 +49,14 @@ input_graph_folder and input_pattern are required, and there are also other para
 --chunk_size : chunk size for task assignment
 
 ## Experiment 
-include experiment script for H-index , Trust , SMOG
+Include experiment script for H-index , Trust , SMOG
 
-experiment for Trust and Hindex: 
+Experiment for Trust and Hindex: 
     `python performance_benchmark.py /data/zh_dataset/Hindex_processed_graph_challenge_dataset/snap`
 
-experiment for SMOG:
-    Just execute 'python' + 'script_file_name.py' command
+If you want to test the results of all graphs and all patterns on SMOG, you can execute 'python pattern.py', You can change the contents of pattern.py to modify the graph and pattern to be tested and the path to the output file
 
-The input arguments is the input graph folder (include all graph already preprocessed)
+If you want to test the results on a different number of GPUs, you can execute 'python scalability.py' in scalability folder, You can change the contents of scalability.py to modify the graph and pattern and numbers of GPU to be tested and the path to the output file
 
 ## Contact
 Please send me a email if you have any questions: zhmeng.cn@gmail.com or wzbwangzhibin@gmail.com
