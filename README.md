@@ -3,7 +3,7 @@ This is the code for subgraphIsomorphism based on GPU submitted at Graph Challen
 
 ## Environment
 
-CUDA Toolkit 11.6; gcc version 11.1.0; mpiexec (OpenRTE) 2.1.1; MPICH Version:3.3a2
+CUDA Toolkit 11.6; gcc version 11.1.0; mpiexec (OpenRTE) 2.1.1; MPICH Version:3.3a2; Python 3.10.9
 
 ## Dataset
 
