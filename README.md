@@ -76,7 +76,7 @@ input_graph_folder and input_pattern are required, and there are also other para
 --chunk_size : chunk size for task assignment
 
 ### Contact
-Please send me a email if you have any questions: zhmeng.cn@gmail.com
+Please send me a email if you have any questions: zhmeng.cn@gmail.com or wzbwangzhibin@gmail.com
 
 ### Results
 
