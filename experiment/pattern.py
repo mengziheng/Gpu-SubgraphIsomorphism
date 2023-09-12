@@ -9,8 +9,8 @@ import pandas as pd
 # folder_path = sys.argv[1]
 
 pattern_list = ["Q0","Q1","Q2","Q3","Q4","Q5","Q6"]
-folder_path = "/data/zh_dataset/processed_graph_challenge_dataset/snap"
-output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/SMOG_patern"
+folder_path = "../data/processed_graph"
+output_path = "../data/result"
 output_file = os.path.join(output_path, folder_path.split('/')[-1] + ".xlsx")
 
 file_names = os.listdir(folder_path)
@@ -35,7 +35,7 @@ for i,pattern in enumerate(pattern_list):
             continue
         print(file_name + " order : " + str(i))
         dir_name = os.path.join(folder_path, file_name)
-        command = f"cd ../../final_version/ && python script.py --input_graph_folder {dir_name} --input_pattern {pattern}"
+        command = f"cd ../SMOG/ && python script.py --input_graph_folder {dir_name} --input_pattern {pattern}"
         regex_pattern = r"graph : ([\w\-\/\.]+) time is : (\d+\.\d+) ms,count is : (\d+)"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 

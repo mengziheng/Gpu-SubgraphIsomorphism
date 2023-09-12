@@ -1,1 +1,1 @@
-/data/zh_dataset/processed_graph_challenge_dataset/snap/cit-Patents
+../data/processed_graph/amazon0302

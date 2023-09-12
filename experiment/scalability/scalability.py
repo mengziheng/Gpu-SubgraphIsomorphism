@@ -6,10 +6,12 @@ import pandas as pd
 import openpyxl
 
 file_list_path = "graph_dataset.txt"
-output_path = "/home/zhmeng/GPU/Gpu-SubgraphIsomorphism/result/SMOG_scalability/xlsx"
-pattern_list = ["Q0", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6"]
-# param_range = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+output_path = "../../data/result"
+pattern_list = ["Q0", "Q1"]
 param_range = [1, 2, 4, 8]
+
+# pattern_list = ["Q0", "Q1", "Q2", "Q3", "Q4", "Q5", "Q6"]
+# param_range = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
 
 
 results = []
@@ -29,9 +31,9 @@ for k, file_name in enumerate(file_names):
         dataset_results = []
         for j, param in enumerate(param_range):
             sheet.cell(row=j + 2, column=1, value=param)
-            command = f"cd ../../final_version/ && python script.py --input_graph_folder {file_name} --input_pattern {pattern} --N {param}"
+            command = f"cd ../../SMOG/ && python script.py --input_graph_folder {file_name} --input_pattern {pattern} --N {param}"
             print(command)
-            regex_pattern = r"graph : ([\w\-\/]+) time is : (\d+\.\d+) ms,count is : (\d+)"
+            regex_pattern = r"graph : ([\w\-\/\.]+) time is : (\d+\.\d+) ms,count is : (\d+)"
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
             for line in iter(process.stdout.readline, b""):
                 line = line.decode().strip()
