@@ -7,11 +7,9 @@ CUDA Toolkit 11.6; gcc version 11.1.0; mpiexec (OpenRTE) 2.1.1; MPICH Version:3.
 
 ## Dataset
 
+Run  `./run.sh ` in data folder, or you can create any specified folder for data
+
 Dataset source from : http://graphchallenge.mit.edu/data-sets
-
-Download the file in mmio format to the `data/graph folder`, or to any specified folder
-
-You can download file by `wget https://graphchallenge.s3.amazonaws.com/snap/amazon0302/amazon0302_adj.mmio`
 
 The optional patterns are shown below
 
