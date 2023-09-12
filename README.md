@@ -1,5 +1,5 @@
 # SMOG
-This is the code for subgraphIsomorphism based on GPU submitted at Graph Challenge 2023.
+This is the code for subgraphIsomorphism based on GPU submitted at Graph Challenge 2023
 
 ## Environment
 
@@ -9,7 +9,7 @@ CUDA Toolkit 11.6; gcc version 11.1.0; mpiexec (OpenRTE) 2.1.1; MPICH Version:3.
 
 Dataset source from : http://graphchallenge.mit.edu/data-sets
 
-Download the file in mmio format to the `data/graph folder`, or to any specified folder.
+Download the file in mmio format to the `data/graph folder`, or to any specified folder
 
 You can download file by `wget https://graphchallenge.s3.amazonaws.com/snap/amazon0302/amazon0302_adj.mmio`
 
@@ -35,7 +35,7 @@ The input arguments is
 2. output graph folder (include all graph already preprocessed)
 
 ## Compile and Run code
-Before running the following code, you need to preprocess the graph first. See the preprocess part above.
+Before running the following code, you need to preprocess the graph first. See the preprocess part above
 
 Run the srcipt in SMOG folder
     `python script.py --input_graph_folder ../data/processed_graph/amazon0302 --input_pattern Q2`
@@ -66,7 +66,7 @@ You can change the contents of pattern.py to modify the graph and pattern to be 
 
 If you want to test the results on different numbers of GPUs, you can execute 
     `python scalability.py` 
-in scalability folder, you can change the contents of scalability.py to modify the pattern and numbers of GPUs to be tested and the path to the output file. You can also change the contents of graph_dataset.txt to modify the graphs to be tested.
+in scalability folder, you can change the contents of scalability.py to modify the pattern and numbers of GPUs to be tested and the path to the output file. You can also change the contents of graph_dataset.txt to modify the graphs to be tested
 
 ## Contact
 Please send me a email if you have any questions: zhmeng.cn@gmail.com or wzbwangzhibin@gmail.com
