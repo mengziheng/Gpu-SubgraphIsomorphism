@@ -14,7 +14,7 @@ Download the file in mmio format to the `data/graph folder`, or to any specified
 You can download file by `wget https://graphchallenge.s3.amazonaws.com/snap/amazon0302/amazon0302_adj.mmio`
 
 The optional patterns are shown below
-![Uploading figure.png…]()
+![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/90ef9841-3b08-42ee-887d-26be679e1a3d)
 
 
 ## Preprocess 
