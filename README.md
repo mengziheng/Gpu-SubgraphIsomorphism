@@ -13,6 +13,10 @@ Download the file in mmio format to the `data/graph folder`, or to any specified
 
 You can download file by `wget https://graphchallenge.s3.amazonaws.com/snap/amazon0302/amazon0302_adj.mmio`
 
+The optional patterns are shown below
+![Uploading figure.png…]()
+
+
 ## Preprocess 
 
 include preprocess script for H-index , Trust , SMOG
@@ -75,9 +79,7 @@ Please send me a email if you have any questions: zhmeng.cn@gmail.com or wzbwang
 | amazon0601           | 35661461    | 45701006    | 4420994   | 232448240   | 3606466    | 285794903   | 2193997    | 143515707   |
 | as20000102           | 288840      | 287940      | 5636      | 1452941     | 5900       | 1773657     | 4779       | 410823      |
 | as-caida20071105     | 2287349     | 2042272     | 53875     | 16546241    | 82231      | 23868747    | 102147     | 5221539     |
-| ca-AstroPh           | 44916549    | 72355715    | 9580415   | 2545573891  | 64997961   | 2732693146  | 400401488  | 2115036981  |![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/b6831068-f129-4c23-b495-0b8c50227d65)
-[figure.pdf](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/files/12584885/figure.pdf)
-
+| ca-AstroPh           | 44916549    | 72355715    | 9580415   | 2545573891  | 64997961   | 2732693146  | 400401488  | 2115036981  |
 | ca-CondMat           | 1505383     | 2349650     | 294008    | 21403215    | 511088     | 23018710    | 919604     | 16737753    |
 | ca-GrQc              | 1054723     | 2041499     | 329297    | 68885210    | 2215500    | 69763367    | 12898478   | 67338180    |
 | ca-HepPh             | 507961441   | 976450063   | 156497775 | 2.0414E+11  | 6608523653 | 2.05227E+11 |            | 1.99285E+11 |
