@@ -150,7 +150,6 @@ void saveUndirectedGraph()
     ofstream adjFile(GraphFile + "generic_adjacent.bin", ios::out | ios::binary);
     ofstream vertexFile(GraphFile + "generic_vertex.bin", ios::out | ios::binary);
     ofstream maxDegreeFile(GraphFile + "generic_md.bin", ios::out | ios::binary);
-    cout << GraphFile << "begin.bin" << endl;
     if (!beginFile)
     {
         cout << "error" << endl;

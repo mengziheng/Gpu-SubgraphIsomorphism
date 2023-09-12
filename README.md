@@ -52,7 +52,7 @@ The input arguments is the input graph folder (include all graph already preproc
 ### result 
 results obtained from experiments
 
-### final_version
+### SMOG
 The version of the paper as it is submitted, which readers can use for testing
 
 ## Compile and Run code
