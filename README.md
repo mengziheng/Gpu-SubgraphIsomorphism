@@ -64,9 +64,9 @@ If you want to test the results of all graphs and all patterns on SMOG, you can 
     `python pattern.py`
 You can change the contents of pattern.py to modify the graph and pattern to be tested and the path to the output file
 
-If you want to test the results on a different number of GPUs, you can execute 
+If you want to test the results on different numbers of GPUs, you can execute 
     `python scalability.py` 
-in scalability folder, You can change the contents of scalability.py to modify the pattern and numbers of GPU to be tested and the path to the output file. You can also change the contents of graph_dataset.txt to modify the graphs to be tested.
+in scalability folder, you can change the contents of scalability.py to modify the pattern and numbers of GPUs to be tested and the path to the output file. You can also change the contents of graph_dataset.txt to modify the graphs to be tested.
 
 ## Contact
 Please send me a email if you have any questions: zhmeng.cn@gmail.com or wzbwangzhibin@gmail.com
