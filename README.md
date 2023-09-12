@@ -15,6 +15,7 @@ You can download file by `wget https://graphchallenge.s3.amazonaws.com/snap/amaz
 
 The optional patterns are shown below
 
+
 ![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/90ef9841-3b08-42ee-887d-26be679e1a3d)
 
 
