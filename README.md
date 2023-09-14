@@ -1,4 +1,4 @@
-This is the code for subgraphIsomorphism based on GPU submitted at Graph Challenge 2023
+This is the code for SMOG submitted at Graph Challenge 2023
 
 ## Environment
 
