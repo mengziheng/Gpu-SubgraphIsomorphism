@@ -1,4 +1,4 @@
-This is the code for SMOG submitted at Graph Challenge 2023
+This is the code for SMOG: Accelerating Subgraph Matching on GPUs submitted at Graph Challenge 2023
 
 ## Environment
 
@@ -13,7 +13,8 @@ Dataset source from : http://graphchallenge.mit.edu/data-sets
 The optional patterns are shown below
 
 
-![pattern](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/ce320ef4-869a-4a91-97dd-bd07e42d0479)
+![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/5f918c5b-0c3a-455e-8a83-e7c82e2e725a)
+
 
 
 
