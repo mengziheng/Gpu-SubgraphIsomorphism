@@ -466,7 +466,7 @@ struct arguments SubgraphMatching(int process_id, int process_num, struct argume
         length = edge_count;
 #endif
         time_start = clock();
-        if (pattern.compare("Q5") == 0 || pattern.compare("Q7") == 0|| pattern.compare("Q3") == 0 || pattern.compare("Q0") == 0 || pattern.compare("Q4") == 0 || pattern.compare("Q6") == 0)
+        if (pattern.compare("Q5") == 0 || pattern.compare("Q7") == 0|| pattern.compare("Q3") == 0 || pattern.compare("Q0") == 0 || pattern.compare("Q4") == 0 || pattern.compare("Q6") == 0 || pattern.compare("Q8") == 0)
         {
             time_start = clock();
             DFSKernelForClique<<<block_size, block_number>>>(d_reuse, process_id, process_num, chunk_size, length, bucket_size, bucket_num, max_degree, d_intersection_orders, d_intersection_offset, d_restriction, d_degree_offset, d_adjcant, d_hash_tables_offset, d_hash_tables, d_vertex, d_ir, d_sum, G_INDEX);

@@ -129,9 +129,23 @@ if __name__ == "__main__":
             intersection_offset = "{0, 1, 3, 4, 6}"
             restriction = "{-1, 0, -1, 2, -1}"
             reuse = "{-1, -1, -1, 2, -1}"
-        # case "Q7":
-        #     i = 4
-        #     args = []
+        case "Q7":
+            i = 6
+            defs = []
+            intersection_size = 9
+            intersection_orders = "{0, 0, 1, -1, 2, -1, 3, -1, 4}"
+            intersection_offset = "{0, 1, 3, 5, 7, 9}"
+            reuse = "{-1, -1, -1, 2, 3, 4}"
+        case "Q8":
+            i = 5
+            defs = ["withRestriction"]
+            intersection_size = 6
+            restriction_size = 5
+            intersection_orders = "{0, 0, 1, -1, 2, -1}"
+            intersection_offset = "{0, 1, 3, 5, 6}"
+            restriction = "{-1, 0, -1, -1, 3}"
+            reuse = "{-1, -1, -1, 2, 3}"
+        
         # case "Q8":
         #     i = 6
         #     defs = ["withRestriction", "withDuplicate"]
