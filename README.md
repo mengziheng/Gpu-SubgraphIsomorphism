@@ -1,4 +1,4 @@
-# SMOG
+![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/e4f6fb7c-acfc-4608-8417-a5e77cc89543)# SMOG
 This is the code for subgraphIsomorphism based on GPU submitted at Graph Challenge 2023
 
 ## Environment
@@ -14,7 +14,9 @@ Dataset source from : http://graphchallenge.mit.edu/data-sets
 The optional patterns are shown below
 
 
-![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/90ef9841-3b08-42ee-887d-26be679e1a3d)
+![pattern](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/ce320ef4-869a-4a91-97dd-bd07e42d0479)
+
+
 
 
 ## Preprocess 
