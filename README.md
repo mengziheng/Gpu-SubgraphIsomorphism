@@ -1,4 +1,3 @@
-![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/e4f6fb7c-acfc-4608-8417-a5e77cc89543)# SMOG
 This is the code for subgraphIsomorphism based on GPU submitted at Graph Challenge 2023
 
 ## Environment
