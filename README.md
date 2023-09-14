@@ -13,9 +13,7 @@ Dataset source from : http://graphchallenge.mit.edu/data-sets
 The optional patterns are shown below
 
 
-![figure](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/5f918c5b-0c3a-455e-8a83-e7c82e2e725a)
-
-
+![pattern](https://github.com/mengziheng/Gpu-SubgraphIsomorphism/assets/121283369/c47c8f22-075c-4ea7-9286-ed0b214de22a)
 
 
 
