@@ -1,4 +1,4 @@
-This is the code for SMOG: Accelerating Subgraph Matching on GPUs at Graph Challenge 2023
+This is the code for “SMOG: Accelerating Subgraph Matching on GPUs”, which won the GraphChallenge 2023 champion.
 
 ## Environment
 
